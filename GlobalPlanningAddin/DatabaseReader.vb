@@ -222,21 +222,26 @@ Friend Class DatabaseReader : Implements IDisposable
         'Header row Height
         CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = CType(ConfigSheet.Rows(PARAMS_FIRSTROW - 1), Range).RowHeight
 
-        'Attempt to solve the OneDrive Sync issue
-        ReportSheet.Range(
-                ReportSheet.Cells(REPORT_FIRSTROW, 1),
-                ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).Interior.ColorIndex = 0
 
         'Rows Format
         ConfigSheet.Range(
                 ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_FORMAT),
                 ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
-        ReportSheet.Range(
-                ReportSheet.Cells(REPORT_FIRSTROW, 1),
-                ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
-        ReportSheet.Range(
-                ReportSheet.Cells(REPORT_FIRSTROW, 1),
-                ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+        For FromLine As Integer = 0 To ReportNbRow Step 500
+            ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW + FromLine + 500 - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+            ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW + FromLine + 500 - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+        Next
+
+        'ReportSheet.Range(
+        '        ReportSheet.Cells(REPORT_FIRSTROW, 1),
+        '        ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+        'ReportSheet.Range(
+        '        ReportSheet.Cells(REPORT_FIRSTROW, 1),
+        '        ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
 
 
         'Dim ColIndex As Integer
