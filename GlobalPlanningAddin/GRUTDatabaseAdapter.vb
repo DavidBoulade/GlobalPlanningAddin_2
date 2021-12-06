@@ -289,6 +289,16 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
             Case "First_Recship_Date" : Return "CASE WHEN First_Recship_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Recship_Date,'yyyy-MM-dd') END as First_Recship_Date" '"First_Recship_Date" '**
             Case "GDO_Reviewed" : Return "CASE WHEN GDO_Reviewed='1970-01-01' THEN NULL ELSE FORMAT(GDO_Reviewed,'yyyy-MM-dd') END as GDO_Reviewed" '"GDO_Reviewed" '**
             Case "REVIEWED_DATE" : Return "CASE WHEN REVIEWED_DATE='1970-01-01' THEN NULL ELSE FORMAT(REVIEWED_DATE,'yyyy-MM-dd') END as REVIEWED_DATE" '"REVIEWED_DATE" '**
+            Case "End_of_Demand_Date" : Return "CASE WHEN End_of_Demand_Date='1970-01-01' THEN NULL ELSE FORMAT(End_of_Demand_Date,'yyyy-MM-dd') END as End_of_Demand_Date" '"End_of_Demand_Date" '**
+            Case "Ex_Factory_Date" : Return "CASE WHEN Ex_Factory_Date='1970-01-01' THEN NULL ELSE FORMAT(Ex_Factory_Date,'yyyy-MM-dd') END as Ex_Factory_Date" '"Ex_Factory_Date" '**
+            Case "Factory_Disc_Date" : Return "CASE WHEN Factory_Disc_Date='1970-01-01' THEN NULL ELSE FORMAT(Factory_Disc_Date,'yyyy-MM-dd') END as Factory_Disc_Date" '"Factory_Disc_Date" '**
+            Case "Stock_Out_Date" : Return "CASE WHEN Stock_Out_Date='1970-01-01' THEN NULL ELSE FORMAT(Stock_Out_Date,'yyyy-MM-dd') END as Stock_Out_Date" '"Stock_Out_Date" '**
+            Case "BISS" : Return "CASE WHEN BISS='1970-01-01' THEN NULL ELSE FORMAT(BISS,'yyyy-MM-dd') END as BISS" '"BISS" '**
+            Case "ICW" : Return "CASE WHEN ICW='1970-01-01' THEN NULL ELSE FORMAT(ICW,'yyyy-MM-dd') END as ICW" '"ICW" '**
+
+            Case "Quota_From" : Return "CASE WHEN Quota_From='1900-01-01' THEN NULL ELSE FORMAT(Quota_From,'yyyy-MM-dd') END as Quota_From" '"Quota_From" '**
+            Case "Quota_To" : Return "CASE WHEN Quota_To='1900-01-01' THEN NULL ELSE FORMAT(Quota_To,'yyyy-MM-dd') END as Quota_To" '"Quota_To" '**
+
             Case Else : Return """" & DatabaseColName & """"
         End Select
     End Function

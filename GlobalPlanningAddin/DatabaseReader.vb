@@ -53,7 +53,6 @@ Friend Class DatabaseReader : Implements IDisposable
                 _DBAdapter = New GRUTDatabaseAdapter()
         End Select
 
-
         ReDim _Report_Param_Row(0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1) 'Row number of each column in the params worksheet
         ReDim _Report_ColNumber(0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1)  'Column number in the summary report
 
@@ -206,113 +205,113 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Private Sub ApplyReportColumnsSetup(ReportNbRow As Integer)
 
-        ''Header text
-        'ConfigSheet.Range(
-        '        ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_HEADERTEXT),
-        '        ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
-        'ReportSheet.Range(
-        '        ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
-        '        ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValues,,, True)
+        'Header text
+        ConfigSheet.Range(
+                ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_HEADERTEXT),
+                ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
+        ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValues,,, True)
 
-        ''Header Format
-        'CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Copy()
-        'ReportSheet.Range(
-        '        ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
-        '        ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+        'Header Format
+        CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Copy()
+        ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
 
-        ''Header row Height
-        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = CType(ConfigSheet.Rows(PARAMS_FIRSTROW - 1), Range).RowHeight
+        'Header row Height
+        CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = CType(ConfigSheet.Rows(PARAMS_FIRSTROW - 1), Range).RowHeight
 
-        ''Rows Format
-        'ConfigSheet.Range(
-        '        ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_FORMAT),
-        '        ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
-        'ReportSheet.Range(
-        '        ReportSheet.Cells(REPORT_FIRSTROW, 1),
-        '        ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
-        'ReportSheet.Range(
-        '        ReportSheet.Cells(REPORT_FIRSTROW, 1),
-        '        ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+        'Rows Format
+        ConfigSheet.Range(
+                ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_FORMAT),
+                ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
+        ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+        ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
 
 
-        Dim ColIndex As Integer
+        'Dim ColIndex As Integer
 
-        'Setup the columns *****************************************
+        ''Setup the columns *****************************************
 
-        CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = 45
-        CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).HorizontalAlignment = XlHAlign.xlHAlignCenter
-        CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).VerticalAlignment = XlVAlign.xlVAlignTop
-        CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).WrapText = True
+        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = 45
+        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).HorizontalAlignment = XlHAlign.xlHAlignCenter
+        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).VerticalAlignment = XlVAlign.xlVAlignTop
+        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).WrapText = True
 
-        For ColIndex = 0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1
-            'Column
-            If _Report_Param_Row(ColIndex) > 0 Then
-                With ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex)))
-                    .NumberFormat = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).NumberFormat
-                    .Interior.Color = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Interior.Color
-                    '.ColumnWidth = CellValue_Int(ConfigSheet, _Report_Param_Row(ColIndex), PARAMS_COL_WIDTH) 'we will do that after loading the data as it changes columns width
-                    .Locked = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Locked
-                    .Font.Name = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Name
-                    '.Font.Background = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Background
-                    .Font.Bold = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Bold
-                    .Font.Color = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Color
-                    '.Font.ColorIndex = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ColorIndex
-                    .Font.FontStyle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.FontStyle
-                    .Font.Italic = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Italic
-                    .Font.Size = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Size
-                    '.Font.ThemeColor = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ThemeColor
-                    '.Font.ThemeFont = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ThemeFont
-                    '.Font.TintAndShade = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.TintAndShade
-                    .HorizontalAlignment = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).HorizontalAlignment
-                    .VerticalAlignment = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).VerticalAlignment
+        'For ColIndex = 0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1
+        '    'Column
+        '    If _Report_Param_Row(ColIndex) > 0 Then
+        '        With ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex)))
+        '            .NumberFormat = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).NumberFormat
+        '            .Interior.Color = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Interior.Color
+        '            '.ColumnWidth = CellValue_Int(ConfigSheet, _Report_Param_Row(ColIndex), PARAMS_COL_WIDTH) 'we will do that after loading the data as it changes columns width
+        '            .Locked = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Locked
+        '            .Font.Name = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Name
+        '            '.Font.Background = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Background
+        '            .Font.Bold = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Bold
+        '            .Font.Color = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Color
+        '            '.Font.ColorIndex = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ColorIndex
+        '            .Font.FontStyle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.FontStyle
+        '            .Font.Italic = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Italic
+        '            .Font.Size = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Size
+        '            '.Font.ThemeColor = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ThemeColor
+        '            '.Font.ThemeFont = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ThemeFont
+        '            '.Font.TintAndShade = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.TintAndShade
+        '            .HorizontalAlignment = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).HorizontalAlignment
+        '            .VerticalAlignment = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).VerticalAlignment
 
-                    'Validation
-                    If HasValidation(CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range)) Then
-                        Try
-                            With .Validation
-                                .Delete()
-                                .Add(CType(CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Type, XlDVType),
-                                    CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.AlertStyle,
-                                    CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Operator,
-                                    CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Formula1,
-                                    CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Formula2)
+        '            'Validation
+        '            If HasValidation(CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range)) Then
+        '                Try
+        '                    With .Validation
+        '                        .Delete()
+        '                        .Add(CType(CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Type, XlDVType),
+        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.AlertStyle,
+        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Operator,
+        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Formula1,
+        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Formula2)
 
-                                .IgnoreBlank = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.IgnoreBlank
-                                .InCellDropdown = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InCellDropdown
-                                .InputTitle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InputTitle
-                                .ErrorTitle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ErrorTitle
-                                .InputMessage = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InputMessage
-                                .ErrorMessage = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ErrorMessage
-                                .ShowInput = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ShowInput
-                                .ShowError = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ShowError
-                            End With
-                        Catch ex As Exception
-                            MsgBox("Incorrect data validation definition for column '" & _Param_ColHeader_Rng.CellValue_Str(_Report_ColNumber(ColIndex)) & "'", MsgBoxStyle.Critical, "Global planning Addin")
-                        End Try
-                    End If
+        '                        .IgnoreBlank = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.IgnoreBlank
+        '                        .InCellDropdown = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InCellDropdown
+        '                        .InputTitle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InputTitle
+        '                        .ErrorTitle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ErrorTitle
+        '                        .InputMessage = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InputMessage
+        '                        .ErrorMessage = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ErrorMessage
+        '                        .ShowInput = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ShowInput
+        '                        .ShowError = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ShowError
+        '                    End With
+        '                Catch ex As Exception
+        '                    MsgBox("Incorrect data validation definition for column '" & _Param_ColHeader_Rng.CellValue_Str(_Report_ColNumber(ColIndex)) & "'", MsgBoxStyle.Critical, "Global planning Addin")
+        '                End Try
+        '            End If
 
-                    'Conditional format
-                    If CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).FormatConditions.Count > 0 Then
-                        CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Copy()
-                        .PasteSpecial(XlPasteType.xlPasteAllMergingConditionalFormats)
-                        Globals.ThisWorkbook.Application.CutCopyMode = CType(0, XlCutCopyMode)
-                    End If
+        '            'Conditional format
+        '            If CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).FormatConditions.Count > 0 Then
+        '                CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Copy()
+        '                .PasteSpecial(XlPasteType.xlPasteAllMergingConditionalFormats)
+        '                Globals.ThisWorkbook.Application.CutCopyMode = CType(0, XlCutCopyMode)
+        '            End If
 
-                End With
+        '        End With
 
-                'CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Copy()
-                'ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))).PasteSpecial(XlPasteType.xlPasteFormats)
-                'ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))).PasteSpecial(XlPasteType.xlPasteValidation)
+        '        'CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Copy()
+        '        'ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))).PasteSpecial(XlPasteType.xlPasteFormats)
+        '        'ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))).PasteSpecial(XlPasteType.xlPasteValidation)
 
-                ''Header
-                CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Value = _Param_ColHeader_Rng.CellValue_Str(_Report_ColNumber(ColIndex))
-                CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Interior.Color = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Interior.Color
-                CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Color = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Color
-                CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Bold = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Bold
-                CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Name = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Name
+        '        ''Header
+        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Value = _Param_ColHeader_Rng.CellValue_Str(_Report_ColNumber(ColIndex))
+        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Interior.Color = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Interior.Color
+        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Color = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Color
+        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Bold = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Bold
+        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Name = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Name
 
-            End If
-        Next ColIndex
+        '    End If
+        'Next ColIndex
 
     End Sub
 

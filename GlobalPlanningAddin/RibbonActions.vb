@@ -52,7 +52,6 @@ Imports System.Xml
 
 'End Class
 
-'Hello Github!! From Monaco
 
 
 <ComVisible(True)> Public Class RibbonActions
