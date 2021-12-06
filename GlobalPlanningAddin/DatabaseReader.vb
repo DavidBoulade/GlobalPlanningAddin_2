@@ -222,6 +222,11 @@ Friend Class DatabaseReader : Implements IDisposable
         'Header row Height
         CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = CType(ConfigSheet.Rows(PARAMS_FIRSTROW - 1), Range).RowHeight
 
+        'Attempt to solve the OneDrive Sync issue
+        ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).Interior.ColorIndex = 0
+
         'Rows Format
         ConfigSheet.Range(
                 ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_FORMAT),

@@ -122,6 +122,7 @@ Imports System.Xml
 
         Dim Form_Info As New Form_PluginInfos
         Form_Info.Show()
+
     End Sub
 
 
