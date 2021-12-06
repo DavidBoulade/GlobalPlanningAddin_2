@@ -222,26 +222,31 @@ Friend Class DatabaseReader : Implements IDisposable
         'Header row Height
         CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = CType(ConfigSheet.Rows(PARAMS_FIRSTROW - 1), Range).RowHeight
 
-
         'Rows Format
         ConfigSheet.Range(
                 ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_FORMAT),
                 ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
-        For FromLine As Integer = 0 To ReportNbRow Step 500
-            ReportSheet.Range(
-                ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
-                ReportSheet.Cells(REPORT_FIRSTROW + FromLine + 500 - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
-            ReportSheet.Range(
-                ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
-                ReportSheet.Cells(REPORT_FIRSTROW + FromLine + 500 - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
-        Next
 
-        'ReportSheet.Range(
-        '        ReportSheet.Cells(REPORT_FIRSTROW, 1),
-        '        ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
-        'ReportSheet.Range(
-        '        ReportSheet.Cells(REPORT_FIRSTROW, 1),
-        '        ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+        If LCase(Left(Globals.ThisWorkbook.Path, 4)) = "http" Then
+            'If the template is opened from OneDrive, the copy paste is extremely slow. This is a dirty workarround
+            Dim StepSize As Integer = CInt(200000 / _Param_ColName_Rng.NbRows)
+            For FromLine As Integer = 0 To ReportNbRow Step StepSize
+                ReportSheet.Range(
+                    ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
+                    ReportSheet.Cells(REPORT_FIRSTROW + FromLine + StepSize - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+                ReportSheet.Range(
+                    ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
+                    ReportSheet.Cells(REPORT_FIRSTROW + FromLine + StepSize - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+            Next
+        Else
+            'The template is not synchrnoized with OneDrive, paste noramlly in one go
+            ReportSheet.Range(
+                    ReportSheet.Cells(REPORT_FIRSTROW, 1),
+                    ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+            ReportSheet.Range(
+                    ReportSheet.Cells(REPORT_FIRSTROW, 1),
+                    ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+        End If
 
 
         'Dim ColIndex As Integer
