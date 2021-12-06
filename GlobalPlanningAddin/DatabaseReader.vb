@@ -249,6 +249,7 @@ Friend Class DatabaseReader : Implements IDisposable
         End If
 
         'test branch
+        'test branch 2
 
         'Dim ColIndex As Integer
 
