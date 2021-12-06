@@ -1,0 +1,272 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.props" Condition="Exists('..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.props')" />
+  <Import Project="..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.props" Condition="Exists('..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.props')" />
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{0328729A-7D9E-47AA-B024-7EB6D882CFEB}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>GlobalPlanningAddIn</RootNamespace>
+    <AssemblyName>GlobalPlanningAddIn</AssemblyName>
+    <FileAlignment>512</FileAlignment>
+    <MyType>Windows</MyType>
+    <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
+    <Deterministic>true</Deterministic>
+    <NuGetPackageImportStamp>
+    </NuGetPackageImportStamp>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DocumentationFile>GlobalPlanningAddIn.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <PlatformTarget>AnyCPU</PlatformTarget>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <DefineDebug>false</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DocumentationFile>GlobalPlanningAddIn.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionExplicit>On</OptionExplicit>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionCompare>Binary</OptionCompare>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionStrict>Off</OptionStrict>
+  </PropertyGroup>
+  <PropertyGroup>
+    <OptionInfer>On</OptionInfer>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+  </PropertyGroup>
+  <PropertyGroup>
+    <SignAssembly>false</SignAssembly>
+  </PropertyGroup>
+  <PropertyGroup>
+    <AssemblyOriginatorKeyFile>
+    </AssemblyOriginatorKeyFile>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="ExcelDna.Integration, Version=1.1.0.0, Culture=neutral, PublicKeyToken=f225e9659857edbe, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Integration.1.1.0\lib\ExcelDna.Integration.dll</HintPath>
+    </Reference>
+    <Reference Include="ExcelDna.IntelliSense, Version=1.4.2.0, Culture=neutral, PublicKeyToken=f225e9659857edbe, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.IntelliSense.1.4.2\lib\net40\ExcelDna.IntelliSense.dll</HintPath>
+    </Reference>
+    <Reference Include="Microsoft.Office.Interop.Excel, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Interop.14.0.1\lib\Microsoft.Office.Interop.Excel.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Microsoft.Vbe.Interop, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Interop.14.0.1\lib\Microsoft.Vbe.Interop.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="Office, Version=14.0.0.0, Culture=neutral, PublicKeyToken=71e9bce111e9429c, processorArchitecture=MSIL">
+      <HintPath>..\packages\ExcelDna.Interop.14.0.1\lib\Office.dll</HintPath>
+      <EmbedInteropTypes>True</EmbedInteropTypes>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Windows.Forms" />
+    <Reference Include="System.Xml" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+  <ItemGroup>
+    <Import Include="Microsoft.VisualBasic" />
+    <Import Include="System" />
+    <Import Include="System.Collections" />
+    <Import Include="System.Collections.Generic" />
+    <Import Include="System.Data" />
+    <Import Include="System.Diagnostics" />
+    <Import Include="System.Linq" />
+    <Import Include="System.Windows.Forms" />
+    <Import Include="System.Xml.Linq" />
+    <Import Include="System.Threading.Tasks" />
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="DatabaseAdapterBase.vb" />
+    <Compile Include="Form_Changelog.Designer.vb">
+      <DependentUpon>Form_Changelog.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_Changelog.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_Conflict.designer.vb">
+      <DependentUpon>Form_Conflict.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_Conflict.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_ErrorsDisplay.designer.vb">
+      <DependentUpon>Form_ErrorsDisplay.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_ErrorsDisplay.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_AutoSize_DataGrid.Designer.vb">
+      <DependentUpon>Form_AutoSize_DataGrid.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_AutoSize_DataGrid.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_PluginInfos.Designer.vb">
+      <DependentUpon>Form_PluginInfos.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_PluginInfos.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_Progress.designer.vb">
+      <DependentUpon>Form_Progress.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_Progress.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Form_ReportDate.Designer.vb">
+      <DependentUpon>Form_ReportDate.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Form_ReportDate.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="GRUTDatabaseAdapter.vb" />
+    <Compile Include="My Project\Resources.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>Resources.resx</DependentUpon>
+    </Compile>
+    <Compile Include="PluginInstallManager.vb" />
+    <Compile Include="DatabaseReader.vb" />
+    <Compile Include="Globals.vb" />
+    <Compile Include="RibbonActions.vb" />
+    <Compile Include="My Project\AssemblyInfo.vb" />
+    <Compile Include="My Project\Application.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Application.myapp</DependentUpon>
+    </Compile>
+    <Compile Include="My Project\Settings.Designer.vb">
+      <AutoGen>True</AutoGen>
+      <DependentUpon>Settings.settings</DependentUpon>
+      <DesignTimeSharedInput>True</DesignTimeSharedInput>
+    </Compile>
+    <Compile Include="SKUAlertsDatabaseAdapter.vb" />
+    <Compile Include="SQL_utils.vb" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Form_Changelog.resx">
+      <DependentUpon>Form_Changelog.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_Conflict.resx">
+      <DependentUpon>Form_Conflict.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_ErrorsDisplay.resx">
+      <DependentUpon>Form_ErrorsDisplay.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_AutoSize_DataGrid.resx">
+      <DependentUpon>Form_AutoSize_DataGrid.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_PluginInfos.resx">
+      <DependentUpon>Form_PluginInfos.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_Progress.resx">
+      <DependentUpon>Form_Progress.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Form_ReportDate.resx">
+      <DependentUpon>Form_ReportDate.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="My Project\Resources.resx">
+      <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
+      <CustomToolNamespace>My.Resources</CustomToolNamespace>
+      <SubType>Designer</SubType>
+      <LastGenOutput>Resources.Designer.vb</LastGenOutput>
+    </EmbeddedResource>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="customUI.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="customui14.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="ExcelDna.DnaLibrary.xsd">
+      <SubType>Designer</SubType>
+    </None>
+    <None Include="GlobalPlanningAddIn.dna" />
+    <None Include="My Project\Application.myapp">
+      <Generator>MyApplicationCodeGenerator</Generator>
+      <LastGenOutput>Application.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="My Project\Settings.settings">
+      <Generator>SettingsSingleFileGenerator</Generator>
+      <CustomToolNamespace>My</CustomToolNamespace>
+      <LastGenOutput>Settings.Designer.vb</LastGenOutput>
+    </None>
+    <None Include="packages.config" />
+    <None Include="Properties\ExcelDna.Build.props" />
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_Calendar.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_Info.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_Info_red.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_MagnifyingGlass.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_NewReport.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_Save.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_DownloadTemplate.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_DownloadTemplate_red.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_MROB.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_RTT.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Icons\Icon32_GRUT.png" />
+  </ItemGroup>
+  <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
+  <Import Project="..\packages\ExcelDna.AddIn.1.1.1\build\ExcelDna.AddIn.targets" Condition="Exists('..\packages\ExcelDna.AddIn.1.1.1\build\ExcelDna.AddIn.targets')" />
+  <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
+    <PropertyGroup>
+      <ErrorText>Ce projet fait référence à des packages NuGet qui sont manquants sur cet ordinateur. Utilisez l'option de restauration des packages NuGet pour les télécharger. Pour plus d'informations, consultez http://go.microsoft.com/fwlink/?LinkID=322105. Le fichier manquant est : {0}.</ErrorText>
+    </PropertyGroup>
+    <Error Condition="!Exists('..\packages\ExcelDna.AddIn.1.1.1\build\ExcelDna.AddIn.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ExcelDna.AddIn.1.1.1\build\ExcelDna.AddIn.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.targets'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.props'))" />
+    <Error Condition="!Exists('..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.targets'))" />
+  </Target>
+  <Import Project="..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.targets" Condition="Exists('..\packages\Microsoft.Build.Tasks.Git.1.1.1\build\Microsoft.Build.Tasks.Git.targets')" />
+  <Import Project="..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.targets" Condition="Exists('..\packages\Microsoft.SourceLink.Common.1.1.1\build\Microsoft.SourceLink.Common.targets')" />
+</Project>

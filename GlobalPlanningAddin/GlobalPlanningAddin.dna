@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<DnaLibrary Name="GlobalPlanningAddin" RuntimeVersion="v4.0" xmlns="http://schemas.excel-dna.net/addin/2020/07/dnalibrary"> <!-- xmlns="http://schemas.excel-dna.net/addin/2018/05/dnalibrary" -->
+  <ExternalLibrary Path="GlobalPlanningAddIn.dll" ExplicitExports="true" LoadFromBytes="true" Pack="true" IncludePdb="false" />
+  
+  <CustomUI>
+    <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad='RibbonLoaded' loadImage='LoadImage' >
+
+      <ribbon>
+        <tabs>
+          <tab id="GlobalPlanning" label="Global Planning" > <!-- can also use idMso="TabAddIns" id="SKUAlertsTab" -->
+            
+            <group id="AddinVersion_RibbonGroup" label="Home" getVisible="GetVisible">
+
+              <!-- Plugin Infos button -->
+              <button id="Btn_CheckVersion" onAction="Btn_CheckVersion_Click" getLabel="GetPluginInfosBtnLabel" size="large" getImage='GetBtnImage' />
+              
+              <!-- List of templates  -->
+              <dynamicMenu id="ReportTemplates_DynamicMenu"
+                       getLabel="GetReportTemplatesBtnLabel"
+                       getContent="GetReportTemplatesMenuContent"
+                       invalidateContentOnDrop="true"
+                       size="large"
+                       getImage="GetBtnImage"/>
+              
+            </group>
+
+            <group id="ReportCreation_RibbonGroup" label="Report creation" getVisible="GetVisible">
+
+              <!-- Teplate image btn -->
+              <button id="TemplateImage" onAction="Btn_CheckTemplateVersion_Click" getLabel="GetTemplateName" size="large" getImage='GetBtnImage'  />
+              
+              <!-- Report Date button -->
+              <button id="Btn_ReportDate" onAction="Btn_ReportDate_Click" getLabel="GetReportDateBtnLabel" size="large" getImage='GetBtnImage' /> <!-- getEnabled='GetEnabled'-->
+
+              <!-- Create Report button -->
+              <button id="Btn_CreateReport" onAction="Btn_CreateReport_Click" label="Create Report" size="large" getImage='GetBtnImage' />  <!-- getEnabled='GetEnabled'-->
+            </group>
+            
+            <group id="ReportActions_RibbonGroup" label="Report actions" getVisible='GetVisible'>
+
+              <!-- Save changes button -->
+              <button id="Btn_ReportActions_Save" onAction="Btn_Save_Click" label="Save to DB" size="large" getImage='GetBtnImage' />
+
+              <!-- Display details button -->
+              <button id="Btn_ReportActions_Details" onAction="Btn_Details_Click" label="View Details" size="large" getImage='GetBtnImage' />
+              
+            </group>
+            
+            
+            <group id="ProjectionDetails_RibbonGroup" label="Details" getVisible='GetVisible'>
+
+              <!-- Label Detailled View Header -->
+              <labelControl id="Lbl_DetailedView_Header" getLabel="Get_DetailedView_Header_Label" />
+
+              <!-- More details -->
+              <button id="Btn_DetailedView_Info" label="More details ⏷" getImage="Get_DetailedView_Info_Image" onAction="Btn_DetailedView_Info_Click" /> <!--  ▼ ↓ ⌄ ˬ ☰ ≡ ⁞ 🔍 ⇊ ⇂ ⇓ ⇲ ▾ ⏷ ▿ ▽ ⛛ -->
+
+              <!-- Data Date -->
+              <button id="Btn_DetailedView_Date" getLabel="Get_DetailedView_DateBtn_Label" getImage='GetBtnImage' onAction="Btn_DetailedView_Date_Click" />
+              
+             
+            </group>
+            
+            
+          </tab>
+        </tabs>
+      </ribbon>
+
+      <contextMenus>
+        <contextMenu idMso ='ContextMenuCell'>
+          <!-- Menu created when right click on a cell -->
+          <button id='Btn_ContextMenuCell_Details' label='View details' getImage='GetBtnImage' onAction='Btn_Details_Click' insertBeforeMso='Cut' getVisible='GetVisible' />
+          <button id='Btn_ContextMenuCell_ChangeLog' label='Change Log' imageMso='FileVersionHistory' onAction='Btn_ChangeLog_Click' insertBeforeMso='Cut' getVisible='GetVisible' />
+          <menuSeparator id='MySeparatorC' insertBeforeMso='Cut' />
+        </contextMenu>
+        <contextMenu idMso ='ContextMenuCellLayout'>
+          <!-- Menu created when right click on a cell / Page layout display mode-->
+          <button id='Btn_ContextMenuCellLayout_Details' label='View details' getImage='GetBtnImage' onAction='Btn_Details_Click' insertBeforeMso='Cut' getVisible='GetVisible' />
+          
+          <menuSeparator id='MySeparatorCL' insertBeforeMso='Cut'/>
+        </contextMenu>
+        <!--
+        idMso='ContextMenuRow' => Menu created when right click on row header
+        idMso='ContextMenuColumn' => Menu created when right click on column header
+        idMso='ContextMenuListRange' => Menu created when right click inside an excel table
+         -->
+  
+      </contextMenus>
+
+    </customUI>
+  </CustomUI>
+  
+
+
+  <!--
+       The RuntimeVersion attribute above allows two settings:
+       * RuntimeVersion="v4.0" - for .NET 4 and 4.5
+       * RuntimeVersion="v2.0" - for .NET 2.0, 3.0 and 3.5
+
+       You can have IntelliSense (autocomplete) and validation for this file.
+       See https://github.com/Excel-DNA/ExcelDna/tree/master/Distribution/XmlSchemas/
+
+       Additional referenced assemblies can be specified by adding 'Reference' tags. 
+       These libraries will not be examined and registered with Excel as add-in libraries, 
+       but will be packed into the -packed.xll file and loaded at runtime as needed.
+       For example:
+
+       <Reference Path="Another.Library.dll" Pack="true" />
+
+       Excel-DNA also allows the XML for ribbon UI extensions to be specified in the .dna file.
+       See the main Excel-DNA site at http://excel-dna.net for downloads of the full distribution.
+  -->
+</DnaLibrary>
