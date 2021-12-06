@@ -248,9 +248,8 @@ Friend Class DatabaseReader : Implements IDisposable
                     ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
         End If
 
-        'test branch
-        'test branch 2
 
+        'The below commented code is slower as it involes too many COM calls
         'Dim ColIndex As Integer
 
         ''Setup the columns *****************************************
