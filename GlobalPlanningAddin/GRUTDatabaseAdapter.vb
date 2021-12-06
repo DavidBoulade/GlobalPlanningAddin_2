@@ -296,9 +296,6 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
             Case "BISS" : Return "CASE WHEN BISS='1970-01-01' THEN NULL ELSE FORMAT(BISS,'yyyy-MM-dd') END as BISS" '"BISS" '**
             Case "ICW" : Return "CASE WHEN ICW='1970-01-01' THEN NULL ELSE FORMAT(ICW,'yyyy-MM-dd') END as ICW" '"ICW" '**
 
-            Case "Quota_From" : Return "CASE WHEN Quota_From='1900-01-01' THEN NULL ELSE FORMAT(Quota_From,'yyyy-MM-dd') END as Quota_From" '"Quota_From" '**
-            Case "Quota_To" : Return "CASE WHEN Quota_To='1900-01-01' THEN NULL ELSE FORMAT(Quota_To,'yyyy-MM-dd') END as Quota_To" '"Quota_To" '**
-
             Case Else : Return """" & DatabaseColName & """"
         End Select
     End Function
