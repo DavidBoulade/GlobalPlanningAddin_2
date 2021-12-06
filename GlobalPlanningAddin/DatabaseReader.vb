@@ -248,6 +248,7 @@ Friend Class DatabaseReader : Implements IDisposable
                     ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
         End If
 
+        'test branch
 
         'Dim ColIndex As Integer
 
