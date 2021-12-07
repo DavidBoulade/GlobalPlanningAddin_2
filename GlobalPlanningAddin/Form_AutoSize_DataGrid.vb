@@ -13,7 +13,7 @@
         For Each Rowx As DataGridViewRow In DataGridView1.Rows
             TotalHeight += Rowx.Height
         Next
-        DataGridView1.Height = TotalHeight
+        DataGridView1.Height = TotalHeight + IIf(DataGridView1.ColumnHeadersVisible = True, DataGridView1.ColumnHeadersHeight, 0)
 
         DataGridView1.Left = MarginPx
         DataGridView1.Top = MarginPx

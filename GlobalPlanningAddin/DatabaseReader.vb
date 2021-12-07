@@ -837,13 +837,22 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Public Function Get_ChangeLog(ReportRow As Integer, ReportColumn As Integer, ReportSheet As Worksheet) As DataSet
 
-
-        If _DBAdapter.Read_ChangeLog(_ReportDate, GetKeyValuesForReportRow(ReportRow, ReportSheet), _DBAdapter.Get_SummaryTable_Columns(ReportColumn)) = True Then
+        If _DBAdapter.Read_ChangeLog(_ReportDate, GetKeyValuesForReportRow(ReportRow, ReportSheet), _DBAdapter.Get_SummaryTable_Columns(GetReportColIndex(ReportColumn))) = True Then
             Return _DBAdapter.ChangeLog_Dataset
         Else
             Return Nothing
         End If
 
+    End Function
+
+    Private Function GetReportColIndex(ColumnNumber As Integer) As Integer
+
+        For ColIndex As Integer = 0 To _Report_ColNumber.Count - 1
+            If _Report_ColNumber(ColIndex) = ColumnNumber Then
+                Return ColIndex
+            End If
+        Next
+        Return -1
 
     End Function
 
