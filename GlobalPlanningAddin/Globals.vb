@@ -146,13 +146,13 @@ Public Module Globals
         End If
     End Sub
 
-
     Public Function GetCustomDocumentProperty(Wb As Microsoft.Office.Interop.Excel.Workbook, PropertyName As String) As String
-        Try
-            Return CStr(CType(Wb.CustomDocumentProperties, Microsoft.Office.Core.DocumentProperties).Item(PropertyName).Value)
-        Catch ex As Exception
-            Return ""
-        End Try
+        For Each CustomDocProperty As Microsoft.Office.Core.DocumentProperty In DirectCast(Wb.CustomDocumentProperties, Microsoft.Office.Core.DocumentProperties)
+            If CustomDocProperty.Name = PropertyName Then
+                Return CustomDocProperty.Value
+            End If
+        Next
+        Return ""
     End Function
 
     Public Function GetCustomWorksheetProperty(Ws As Microsoft.Office.Interop.Excel.Worksheet, PropertyName As String) As String
