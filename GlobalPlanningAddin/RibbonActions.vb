@@ -38,7 +38,6 @@ Imports System.Xml
 
 'End Class
 
-'Test for Fred
 
 
 <ComVisible(True)> Public Class RibbonActions
