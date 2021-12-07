@@ -826,13 +826,13 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
-        SQLQuery = "SELECT TOP(50) ChangeDateTime, ChangedBy, OldValue, NewValue, Status FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_TableName() & "] WHERE "
+        SQLQuery = "SELECT TOP(50) ChangeDateTime, ReportDate, ChangedBy, OldValue, NewValue, Status FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_TableName() & "] WHERE "
         For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
             SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
             SQLQuery &= "AND "
         Next
-        SQLQuery &= " ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "'"
-        SQLQuery &= " AND ColumName = '" & ColumnName & "'"
+        'SQLQuery &= " ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "'" 'Should not filter on ReportDate as modifications are copied from day to day...
+        SQLQuery &= " ColumName = '" & ColumnName & "'"
         SQLQuery &= " Order by ChangeDateTime DESC;"
 
         'Now trigger it
