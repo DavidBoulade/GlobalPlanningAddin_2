@@ -36,20 +36,6 @@ Imports System.Xml
 '    '    target.SetValue("The quick brown fox ...")
 '    'End Sub
 
-'    'Dim Selection As Object = ExcelApplication.Selection
-'    'If TypeOf (Selection) Is Microsoft.Office.Interop.Excel.Range Then
-'    'Dim selected_range As Microsoft.Office.Interop.Excel.Range = CType(Selection, Microsoft.Office.Interop.Excel.Range)
-'    'Dim first_col As Integer = selected_range.Column
-'    'Dim first_row As Integer = selected_range.Row
-'    'CType(selected_range.Worksheet.Cells(first_row, first_col), Microsoft.Office.Interop.Excel.Range).Value = ExcelApplication.ActiveWorkbook.Name
-'    '    _GroupsVisible = Not (_GroupsVisible)
-'    '    Globals.ThisRibbon.InvalidateControl("ReportActions_RibbonGroup")
-'    '    Globals.ThisRibbon.InvalidateControl("ProjectionDetails_RibbonGroup")
-
-'    'End If
-
-'    'End Sub
-
 'End Class
 
 
@@ -57,23 +43,6 @@ Imports System.Xml
 <ComVisible(True)> Public Class RibbonActions
     Inherits ExcelRibbon
 
-    Private ChangeLogForm As Form_AutoSize_DataGrid
-    Public Sub Btn_ChangeLog_Click(ByVal control As IRibbonControl)
-        If Globals.Reader Is Nothing Then Exit Sub
-
-        If Not (ChangeLogForm Is Nothing) Then ChangeLogForm.Close()
-
-
-        Dim ChangeLogDataset As DataSet = Globals.Reader.Get_ChangeLog(Globals.ThisWorkbook.Application.ActiveCell.Row, Globals.ThisWorkbook.Application.ActiveCell.Column, CType(Globals.ThisWorkbook.ActiveSheet, Microsoft.Office.Interop.Excel.Worksheet))
-
-        If Not (ChangeLogDataset Is Nothing) AndAlso ChangeLogDataset.Tables(0).Rows.Count > 0 Then
-            ChangeLogForm = New Form_AutoSize_DataGrid(ChangeLogDataset)
-            ChangeLogForm.Show()
-        Else
-            MsgBox("No change made to this cell", MsgBoxStyle.Information, "Global planning Addin")
-        End If
-
-    End Sub
     '**************************************************************************************************************************************************
     '*** Report Date Button
     '**************************************************************************************************************************************************
@@ -495,6 +464,26 @@ Imports System.Xml
         Return Globals.Reader.Get_DetailledView_HeaderText
     End Function
 
+    '**************************************************************************************************************************************************
+    '*** Change log form
+    '**************************************************************************************************************************************************
+    Private ChangeLogForm As Form_AutoSize_DataGrid
+    Public Sub Btn_ChangeLog_Click(ByVal control As IRibbonControl)
+        If Globals.Reader Is Nothing Then Exit Sub
+
+        If Not (ChangeLogForm Is Nothing) Then ChangeLogForm.Close()
+
+
+        Dim ChangeLogDataset As DataSet = Globals.Reader.Get_ChangeLog(Globals.ThisWorkbook.Application.ActiveCell.Row, Globals.ThisWorkbook.Application.ActiveCell.Column, CType(Globals.ThisWorkbook.ActiveSheet, Microsoft.Office.Interop.Excel.Worksheet))
+
+        If Not (ChangeLogDataset Is Nothing) AndAlso ChangeLogDataset.Tables(0).Rows.Count > 0 Then
+            ChangeLogForm = New Form_AutoSize_DataGrid(ChangeLogDataset)
+            ChangeLogForm.Show()
+        Else
+            MsgBox("No change made to this cell", MsgBoxStyle.Information, "Global planning Addin")
+        End If
+
+    End Sub
 
     '**************************************************************************************************************************************************
     '*** Management of the file templates
