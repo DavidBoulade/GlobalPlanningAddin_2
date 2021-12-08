@@ -302,7 +302,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
 
     Public Overrides Function Get_SummaryTable_DefaultSortColumns() As String()
         Return {
-            "Total_Indep_Risk_W01"  ' if user mapped this column, the report will be sorted by this column by default
+            "ServiceRiskFactor"  ' if user mapped this column, the report will be sorted by this column by default
         }
     End Function
 
