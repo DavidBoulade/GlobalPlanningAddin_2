@@ -13,11 +13,8 @@ Public Class PluginInstallManager
     ''' <summary>Current xll file name for this instance of the plugin</summary>
     Private ReadOnly _CurrentXllFileName As String
 
-
-
-
     Sub New()
-        _InstallPath = Globals.ExcelApplication.UserLibraryPath & Globals.PluginXllInstallSubFolder
+        _InstallPath = Globals.ExcelApplication_UserLibraryPath & Globals.PluginXllInstallSubFolder
         _xllPath = ExcelDnaUtil.XllPath
         _CurrentXllFileName = System.IO.Path.GetFileName(_xllPath)
         _xllPath = Strings.Left(_xllPath, Len(_xllPath) - Len(_CurrentXllFileName)) 'keep the path only (don't use IO.path.GetDirectory as a \ may be missing if using c:\)

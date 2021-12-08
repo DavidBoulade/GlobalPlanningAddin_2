@@ -3,7 +3,7 @@
   <ExternalLibrary Path="GlobalPlanningAddIn.dll" ExplicitExports="true" LoadFromBytes="true" Pack="true" IncludePdb="false" />
   
   <CustomUI>
-    <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad='RibbonLoaded' loadImage='LoadImage' >
+    <customUI xmlns="http://schemas.microsoft.com/office/2009/07/customui" onLoad='RibbonLoaded' > <!--loadImage='LoadImage' removed, not used-->
 
       <ribbon>
         <tabs>
@@ -70,7 +70,7 @@
         <contextMenu idMso ='ContextMenuCell'>
           <!-- Menu created when right click on a cell -->
           <button id='Btn_ContextMenuCell_Details' label='View details' getImage='GetBtnImage' onAction='Btn_Details_Click' insertBeforeMso='Cut' getVisible='GetVisible' />
-          <button id='Btn_ContextMenuCell_ChangeLog' label='Change Log' imageMso='FileVersionHistory' onAction='Btn_ChangeLog_Click' insertBeforeMso='Cut' getVisible='GetVisible' />
+          <button id='Btn_ContextMenuCell_ChangeLog' label='Change Log' imageMso='FileVersionHistory' onAction='Btn_ChangeLog_Click' insertBeforeMso='Cut' getVisible='Get_ChangeLogBtn_Visible' />
           <menuSeparator id='MySeparatorC' insertBeforeMso='Cut' />
         </contextMenu>
         <contextMenu idMso ='ContextMenuCellLayout'>

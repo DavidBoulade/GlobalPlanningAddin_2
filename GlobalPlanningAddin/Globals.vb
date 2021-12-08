@@ -26,6 +26,7 @@ Public Module Globals
     Friend Property CurRibbonActions As RibbonActions
 
     Friend Property ExcelApplication As Microsoft.Office.Interop.Excel.Application
+    Friend Property ExcelApplication_UserLibraryPath As String
 
     Friend Property WindowsHandle As IntPtr
 
