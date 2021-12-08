@@ -502,7 +502,7 @@ Imports System.Xml
 
     Private _DownloadTemplatesConfigFile_Thread As Thread
     Private ReadOnly _templates As New List(Of FileTemplate)
-    Private _templates_Lock As New Object 'This lock is used to protect against concurrent accesses of _template
+    Private ReadOnly _templates_Lock As New Object 'This lock is used to protect against concurrent accesses of _template
     Const DEFAULT_MENU_XML As String = "<menu xmlns='http://schemas.microsoft.com/office/2006/01/customui' itemSize='normal'><button id='BtnLoading' label='Loading...' imageMso='RefreshAll'/></menu >"
     Private _templatesMenuXml As String = DEFAULT_MENU_XML
 
@@ -535,7 +535,6 @@ Imports System.Xml
             _DownloadTemplatesConfigFile_Thread.ThreadState = ThreadState.Running Then Exit Sub 'if the thread is already running, exit
 
         _DownloadTemplatesConfigFile_Thread = New Thread(Sub() DownloadAndLoad_Latest_TemplatesConfigFile()) '.NET Garbage collector shoud free up any previous thread object when we lose the reference
-        '_DownloadTemplatesConfigFile_Thread.IsBackground = True
         _DownloadTemplatesConfigFile_Thread.Start() 'Start the download in background
 
     End Sub

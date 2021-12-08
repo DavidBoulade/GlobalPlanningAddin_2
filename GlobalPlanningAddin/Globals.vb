@@ -30,8 +30,8 @@ Public Module Globals
 
     Friend Property WindowsHandle As IntPtr
 
-    Private ReadOnly _WorkbooksData As New List(Of DatabaseReaderWorkbookData)
-    Private _ThisWorkbookData As DatabaseReaderWorkbookData
+    Private ReadOnly _WorkbooksData As New List(Of OpenWorkbookData)
+    Private _ThisWorkbookData As OpenWorkbookData
     Friend ReadOnly Property ThisWorkbook As Microsoft.Office.Interop.Excel.Workbook
         Get
             If Not (_ThisWorkbookData Is Nothing) Then
@@ -92,7 +92,7 @@ Public Module Globals
 
             'check if it is the first time we see this workbook
             If _WorkbooksData.Exists(Function(x) x.Workbook Is Wb) = False Then
-                _WorkbooksData.Add(New DatabaseReaderWorkbookData(Wb)) 'if yes, add in the list
+                _WorkbooksData.Add(New OpenWorkbookData(Wb)) 'if yes, add in the list
                 ThisIsANewWorkbook = True
 
                 'Check also the version of the required Plugin
@@ -217,7 +217,7 @@ Public Module Globals
 
 End Module
 
-Friend Class DatabaseReaderWorkbookData
+Friend Class OpenWorkbookData 'All workbooks that will be opened will get an instance of this class
     Friend Workbook As Microsoft.Office.Interop.Excel.Workbook
     Friend Reader As DatabaseReader
     Friend ReportDate As Date = Nothing

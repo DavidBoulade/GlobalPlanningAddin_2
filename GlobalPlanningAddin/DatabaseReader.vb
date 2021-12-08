@@ -341,7 +341,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
     End Sub
 
-    Public Function ConvertDataTableToArray() As Object(,)
+    Private Function ConvertDataTableToArray() As Object(,)
         Dim dtTable As System.Data.DataTable = _DBAdapter.SummaryTable_Dataset.Tables(0)
         Dim myArray(0 To dtTable.Rows.Count - 1, 0 To dtTable.Columns.Count - 1) As Object
 
