@@ -363,6 +363,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
     End Function
 
     Private ReadOnly _DetailedView_InfoDropDown_Items As New List(Of String())({
+                ({"Extraction Date/time", "EXTRACT_DATETIME"}),
                 ({"Loc", "Loc"}),
                 ({"Item", "Item"}),
                 ({"Description", "Item_Description"}),

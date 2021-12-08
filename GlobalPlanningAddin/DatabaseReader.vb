@@ -824,7 +824,12 @@ Friend Class DatabaseReader : Implements IDisposable
         _ProgressWindow.SetProgress(Progress, Status)
     End Sub
 
-    Public Function GetKeyValuesForReportRow(ReportRow As Integer, ReportSheet As Worksheet) As String()
+    Public Function Is_SummaryWorksheetColumn_Modifiable(ReportColumn As Integer) As Boolean 'Check if the given Worksheet column is modifiable
+        If ReportColumn > _ReportNbColumns Or ReportColumn < 1 Then Return False
+        Dim ColumnName As String = _DBAdapter.Get_SummaryTable_Columns(GetReportColIndex(ReportColumn))
+        Return _DBAdapter.Get_SummaryTable_ListOfModifiableColumns.Contains(ColumnName)
+    End Function
+    Public Function GetKeyValues_For_SummaryReportRow(ReportRow As Integer, ReportSheet As Worksheet) As String()
 
         Dim KeyValues(_DBAdapter.Get_SummaryTable_KeyColumns.Count - 1) As String
         For i As Integer = 0 To _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1
@@ -837,7 +842,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Public Function Get_ChangeLog(ReportRow As Integer, ReportColumn As Integer, ReportSheet As Worksheet) As DataSet
 
-        If _DBAdapter.Read_ChangeLog(_ReportDate, GetKeyValuesForReportRow(ReportRow, ReportSheet), _DBAdapter.Get_SummaryTable_Columns(GetReportColIndex(ReportColumn))) = True Then
+        If _DBAdapter.Read_ChangeLog(_ReportDate, GetKeyValues_For_SummaryReportRow(ReportRow, ReportSheet), _DBAdapter.Get_SummaryTable_Columns(GetReportColIndex(ReportColumn))) = True Then
             Return _DBAdapter.ChangeLog_Dataset
         Else
             Return Nothing

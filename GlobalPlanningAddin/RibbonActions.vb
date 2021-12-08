@@ -44,6 +44,102 @@ Imports System.Xml
     Inherits ExcelRibbon
 
     '**************************************************************************************************************************************************
+    '*** Entry point of this program - Callback after Excel loaded the Ribbon
+    '**************************************************************************************************************************************************
+    Dim PluginUpdateThread As Thread 'This thread is used to check for plugin updates in the background
+    ''' <summary>callback after Excel loaded the Ribbon</summary>
+    Public Sub RibbonLoaded(theRibbon As CustomUI.IRibbonUI)
+        Globals.ThisRibbon = theRibbon
+        Globals.CurRibbonActions = Me
+        Globals.WindowsHandle = ExcelDnaUtil.WindowHandle
+        Globals.ExcelApplication = CType(ExcelDnaUtil.Application, Microsoft.Office.Interop.Excel.Application)
+        Globals.ExcelApplication_UserLibraryPath = Globals.ExcelApplication.UserLibraryPath 'Save the local user librairy path where to store all files for this plugin
+        System.Windows.Forms.Application.EnableVisualStyles() 'enables visual styles (colors, fonts, and other visual elements from the operating system theme) 
+
+        Globals.PluginInstallMgr = New PluginInstallManager()
+        PluginUpdateThread = New Thread(Sub() Globals.PluginInstallMgr.CheckUpdates(AddressOf CheckUpdatesDone))
+        PluginUpdateThread.Start()
+
+        AddHandler Globals.ExcelApplication.WorkbookActivate, AddressOf MyWbChange
+        AddHandler Globals.ExcelApplication.SheetActivate, AddressOf MyWsChange
+        AddHandler Globals.ExcelApplication.WorkbookBeforeClose, AddressOf MyWbClose
+
+        LoadListOfTemplates()
+    End Sub
+
+    'Public Overrides Sub OnBeginShutdown(ByRef custom As Array)
+    '    MsgBox("Excel is shutting down")
+    '    MyBase.OnBeginShutdown(custom)
+    'End Sub
+
+    '**************************************************************************************************************************************************
+    '*** This is called when the check for updates is finished
+    '**************************************************************************************************************************************************
+    Friend Sub CheckUpdatesDone()
+        If Globals.PluginInstallMgr.CurrentPluginVersion.CompareTo(Globals.PluginInstallMgr.LatestPluginVersion) < 0 Then
+            Setup_NewVersionAvailableButton()
+        ElseIf Globals.PluginInstallMgr.CurrentPluginVersion.CompareTo(Globals.PluginInstallMgr.LatestPluginVersion) > 0 Then
+            Setup_BetaVersionButton()
+        End If
+        PluginUpdateThread.Join()
+    End Sub
+
+
+    '**************************************************************************************************************************************************
+    '*** This is called when Excel closes a workbook
+    '**************************************************************************************************************************************************
+    ''' <summary>callback before Excel closes a workbook</summary>
+    Private Sub MyWbClose(Wb As Workbook, ByRef Cancel As Boolean)
+        Globals.WorkbookClosed(Wb)
+    End Sub
+
+
+    '**************************************************************************************************************************************************
+    '*** Callback when user activated a new workbook
+    '**************************************************************************************************************************************************
+    ''' <summary>callback when workbook is activated</summary>
+    Private Sub MyWbChange(Wb As Microsoft.Office.Interop.Excel.Workbook)
+
+        Globals.WorkbookActivated(Wb)
+
+        SetReportDateBtnLabel(Globals.ReportDate)
+        If Not (Globals.ThisWorkbook Is Nothing) Then
+            SetReportCreationGroupVisibleState(True)
+            Globals.ThisRibbon.ActivateTab("GlobalPlanning") 'or use ActivateTabMso("TabAddIns")
+        Else
+            SetReportCreationGroupVisibleState(False)
+            SetReportActionsGroupVisiblility(False)
+            SetProjectionDetailsGroupVisiblility(False)
+        End If
+
+        MyWsChange(Wb.ActiveSheet)
+
+    End Sub
+
+    '**************************************************************************************************************************************************
+    '*** Callback when user activated a new worksheet
+    '**************************************************************************************************************************************************
+    ''' <summary>callback when new worksheet is activated</summary>
+    Private Sub MyWsChange(Ws As Object) 'Microsoft.Office.Interop.Excel.Worksheet
+        Dim ActivetedWorksheet As Microsoft.Office.Interop.Excel.Worksheet = CType(Ws, Microsoft.Office.Interop.Excel.Worksheet)
+
+        Select Case Globals.GetCustomWorksheetProperty(ActivetedWorksheet, "CustomSheetType")
+            Case "SKUAlertsConfig", "GRUTConfig"
+                SetReportActionsGroupVisiblility(False)
+                SetProjectionDetailsGroupVisiblility(False)
+            Case "SKUAlertsReport", "GRUTReport"
+                SetReportActionsGroupVisiblility(True)
+                SetProjectionDetailsGroupVisiblility(False)
+            Case "SKUAlertsDetails", "GRUTDetails"
+                SetReportActionsGroupVisiblility(False)
+                SetProjectionDetailsGroupVisiblility(True)
+            Case Else
+                SetReportActionsGroupVisiblility(False)
+                SetProjectionDetailsGroupVisiblility(False)
+        End Select
+    End Sub
+
+    '**************************************************************************************************************************************************
     '*** Report Date Button
     '**************************************************************************************************************************************************
     Private _ReportDateBtnLabel As String = "Report Date"
@@ -127,101 +223,6 @@ Imports System.Xml
             _ProjectionDetailsGroupVisible = Visible
             Globals.ThisRibbon.InvalidateControl("ProjectionDetails_RibbonGroup")
         End If
-    End Sub
-
-    '**************************************************************************************************************************************************
-    '*** Entry point of this program - Callback after Excel loaded the Ribbon
-    '**************************************************************************************************************************************************
-    Dim PluginUpdateThread As Thread 'This thread is used to check for plugin updates in the background
-    ''' <summary>callback after Excel loaded the Ribbon</summary>
-    Public Sub RibbonLoaded(theRibbon As CustomUI.IRibbonUI)
-        Globals.ThisRibbon = theRibbon
-        Globals.CurRibbonActions = Me
-        Globals.WindowsHandle = ExcelDnaUtil.WindowHandle
-        Globals.ExcelApplication = CType(ExcelDnaUtil.Application, Microsoft.Office.Interop.Excel.Application)
-        System.Windows.Forms.Application.EnableVisualStyles() 'enables visual styles (colors, fonts, and other visual elements from the operating system theme) 
-
-        Globals.PluginInstallMgr = New PluginInstallManager()
-        PluginUpdateThread = New Thread(Sub() Globals.PluginInstallMgr.CheckUpdates(AddressOf CheckUpdatesDone))
-        PluginUpdateThread.Start()
-
-        AddHandler Globals.ExcelApplication.WorkbookActivate, AddressOf MyWbChange
-        AddHandler Globals.ExcelApplication.SheetActivate, AddressOf MyWsChange
-        AddHandler Globals.ExcelApplication.WorkbookBeforeClose, AddressOf MyWbClose
-
-        TriggerRefreshListOfTemplates()
-    End Sub
-
-    'Public Overrides Sub OnBeginShutdown(ByRef custom As Array)
-    '    MsgBox("Excel is shutting down")
-    '    MyBase.OnBeginShutdown(custom)
-    'End Sub
-
-    '**************************************************************************************************************************************************
-    '*** This is called when the check for updates is finished
-    '**************************************************************************************************************************************************
-    Friend Sub CheckUpdatesDone()
-        If Globals.PluginInstallMgr.CurrentPluginVersion.CompareTo(Globals.PluginInstallMgr.LatestPluginVersion) < 0 Then
-            Setup_NewVersionAvailableButton()
-        ElseIf Globals.PluginInstallMgr.CurrentPluginVersion.CompareTo(Globals.PluginInstallMgr.LatestPluginVersion) > 0 Then
-            Setup_BetaVersionButton()
-        End If
-        PluginUpdateThread.Join()
-    End Sub
-
-
-    '**************************************************************************************************************************************************
-    '*** This is called when Excel closes a workbook
-    '**************************************************************************************************************************************************
-    ''' <summary>callback before Excel closes a workbook</summary>
-    Private Sub MyWbClose(Wb As Workbook, ByRef Cancel As Boolean)
-        Globals.WorkbookClosed(Wb)
-    End Sub
-
-
-    '**************************************************************************************************************************************************
-    '*** Callback when user activated a new workbook
-    '**************************************************************************************************************************************************
-    ''' <summary>callback when workbook is activated</summary>
-    Private Sub MyWbChange(Wb As Microsoft.Office.Interop.Excel.Workbook)
-
-        Globals.WorkbookActivated(Wb)
-
-        SetReportDateBtnLabel(Globals.ReportDate)
-        If Not (Globals.ThisWorkbook Is Nothing) Then
-            SetReportCreationGroupVisibleState(True)
-            Globals.ThisRibbon.ActivateTab("GlobalPlanning") 'or use ActivateTabMso("TabAddIns")
-        Else
-            SetReportCreationGroupVisibleState(False)
-            SetReportActionsGroupVisiblility(False)
-            SetProjectionDetailsGroupVisiblility(False)
-        End If
-
-        MyWsChange(Wb.ActiveSheet)
-
-    End Sub
-
-    '**************************************************************************************************************************************************
-    '*** Callback when user activated a new worksheet
-    '**************************************************************************************************************************************************
-    ''' <summary>callback when new worksheet is activated</summary>
-    Private Sub MyWsChange(Ws As Object) 'Microsoft.Office.Interop.Excel.Worksheet
-        Dim ActivetedWorksheet As Microsoft.Office.Interop.Excel.Worksheet = CType(Ws, Microsoft.Office.Interop.Excel.Worksheet)
-
-        Select Case Globals.GetCustomWorksheetProperty(ActivetedWorksheet, "CustomSheetType")
-            Case "SKUAlertsConfig", "GRUTConfig"
-                SetReportActionsGroupVisiblility(False)
-                SetProjectionDetailsGroupVisiblility(False)
-            Case "SKUAlertsReport", "GRUTReport"
-                SetReportActionsGroupVisiblility(True)
-                SetProjectionDetailsGroupVisiblility(False)
-            Case "SKUAlertsDetails", "GRUTDetails"
-                SetReportActionsGroupVisiblility(False)
-                SetProjectionDetailsGroupVisiblility(True)
-            Case Else
-                SetReportActionsGroupVisiblility(False)
-                SetProjectionDetailsGroupVisiblility(False)
-        End Select
     End Sub
 
     '**************************************************************************************************************************************************
@@ -353,7 +354,7 @@ Imports System.Xml
         If Globals.Reader Is Nothing Then Exit Sub
         If Globals.ThisWorkbook.Application.ActiveCell.Row <= DatabaseReader.REPORT_FIRSTROW - 1 Then Exit Sub
 
-        _KeyValuesOfCurrentRow = Globals.Reader.GetKeyValuesForReportRow(Globals.ThisWorkbook.Application.ActiveCell.Row, CType(Globals.ThisWorkbook.ActiveSheet, Microsoft.Office.Interop.Excel.Worksheet))
+        _KeyValuesOfCurrentRow = Globals.Reader.GetKeyValues_For_SummaryReportRow(Globals.ThisWorkbook.Application.ActiveCell.Row, CType(Globals.ThisWorkbook.ActiveSheet, Microsoft.Office.Interop.Excel.Worksheet))
 
         _AvailableMD04Dates = Nothing 'Reset the list of dates on which we have available MD04 snapshots
         _CurrentMD04Date = Globals.ReportDate
@@ -484,90 +485,146 @@ Imports System.Xml
         End If
 
     End Sub
+    Public Function Get_ChangeLogBtn_Visible(control As CustomUI.IRibbonControl) As Boolean
+
+        If Globals.ThisWorkbook.Application.ActiveSheet IsNot Globals.ReportSheet Then Return False 'if we are not on the right sheet, don't display the button
+        If Globals.Reader.Is_SummaryWorksheetColumn_Modifiable(Globals.ThisWorkbook.Application.ActiveCell.Column) Then 'check if the column is modifiable
+            Return True
+        Else
+            Return False
+        End If
+
+    End Function
 
     '**************************************************************************************************************************************************
     '*** Management of the file templates
     '**************************************************************************************************************************************************
 
-    Private RefreshListOfTemplatesThread As Thread
+    Private _DownloadTemplatesConfigFile_Thread As Thread
     Private ReadOnly _templates As New List(Of FileTemplate)
+    Private _templates_Lock As New Object 'This lock is used to protect against concurrent accesses of _template
     Const DEFAULT_MENU_XML As String = "<menu xmlns='http://schemas.microsoft.com/office/2006/01/customui' itemSize='normal'><button id='BtnLoading' label='Loading...' imageMso='RefreshAll'/></menu >"
     Private _templatesMenuXml As String = DEFAULT_MENU_XML
 
     Public Function GetReportTemplatesMenuContent(ByVal control As CustomUI.IRibbonControl) As String
+        'When Excel asks, returns the current Menu XML
         Return _templatesMenuXml
     End Function
 
-    Public Sub RefreshListOfTemplatesCallback(ByVal control As CustomUI.IRibbonControl)
+    Public Sub RefreshListOfTemplates_MenuBtnClick(ByVal control As CustomUI.IRibbonControl) 'This is called when the user clicks the Refresh button on the templates Menu
         TriggerRefreshListOfTemplates()
     End Sub
-    Public Sub TriggerRefreshListOfTemplates()
 
+    Public Sub LoadListOfTemplates() 'Load the list of templates (first from the local copy if it exists, and then from the central repository)
+
+        'Start with the default "Loading..." menu
         _templatesMenuXml = DEFAULT_MENU_XML
 
-        RefreshListOfTemplatesThread = New Thread(Sub() RefreshListOfTemplates())
-        RefreshListOfTemplatesThread.Start()
+        'If the local copy of the templates config file exists, loads it
+        Dim InstallPath As String = Globals.ExcelApplication_UserLibraryPath & Globals.PluginXllInstallSubFolder
+        If System.IO.File.Exists(InstallPath & Globals.TemplatesMenuXmlFileName) = True Then
+            LoadTemplatesConfigFile(InstallPath & Globals.TemplatesMenuXmlFileName)
+        End If
+
+        'and trigger the refresh of the config file
+        TriggerRefreshListOfTemplates()
     End Sub
-    Public Sub RefreshListOfTemplates()
+    Public Sub TriggerRefreshListOfTemplates() 'Refresh List of Templates from the central repository
+
+        If _DownloadTemplatesConfigFile_Thread IsNot Nothing AndAlso
+            _DownloadTemplatesConfigFile_Thread.ThreadState = ThreadState.Running Then Exit Sub 'if the thread is already running, exit
+
+        _DownloadTemplatesConfigFile_Thread = New Thread(Sub() DownloadAndLoad_Latest_TemplatesConfigFile()) '.NET Garbage collector shoud free up any previous thread object when we lose the reference
+        '_DownloadTemplatesConfigFile_Thread.IsBackground = True
+        _DownloadTemplatesConfigFile_Thread.Start() 'Start the download in background
+
+    End Sub
+
+    Public Sub DownloadAndLoad_Latest_TemplatesConfigFile() 'Download the Templates config file from the central repository, and trigger its load
+        'As this is run in a background thread, we must make sure no COM call is made to Excel
+        Dim webClient = New WebClient
+        Dim TemplatesConfigFileBuffer As Byte()
+
+        Dim InstallPath As String = Globals.ExcelApplication_UserLibraryPath & Globals.PluginXllInstallSubFolder
+
+        Try
+            If System.IO.Directory.Exists(InstallPath) = False Then System.IO.Directory.CreateDirectory(InstallPath) 'Create the folder if doesn't exist
+            TemplatesConfigFileBuffer = webClient.DownloadData(Globals.VersionCheckFolder & Globals.TemplatesMenuXmlFileName)
+            Dim fs As FileStream = New FileStream(InstallPath & Globals.TemplatesMenuXmlFileName, FileMode.Create)
+            fs.Write(TemplatesConfigFileBuffer, 0, TemplatesConfigFileBuffer.Length)
+            fs.Close()
+            fs.Dispose()
+            'Templates config file downloaded correctly, now loads it
+            LoadTemplatesConfigFile(InstallPath & Globals.TemplatesMenuXmlFileName)
+        Catch ex As Exception
+            'Error while downloading Templates config file
+        End Try
+
+    End Sub
+
+    Public Sub LoadTemplatesConfigFile(FileFullPath As String) 'Load a given templates config file
 
         Try
 
             Dim XmlDoc As XmlDocument = New XmlDocument()
-            XmlDoc.Load(Globals.VersionCheckFolder & Globals.TemplatesMenuXmlFileName)
+            XmlDoc.Load(FileFullPath)
 
-            _templates.Clear()
             Dim FoldersCounter As Integer = 0
-            Dim NewMenuXml = "<menu xmlns='http://schemas.microsoft.com/office/2006/01/customui' itemSize='normal'>"
+            Dim NewMenuXml As String = "<menu xmlns='http://schemas.microsoft.com/office/2006/01/customui' itemSize='normal'>"
 
-            For Each NodeElt As XmlNode In XmlDoc.DocumentElement.ChildNodes
-                Select Case NodeElt.Name
+            SyncLock _templates_Lock 'Make sure no one tries to read the templates while we are making modifications to the list here
+                _templates.Clear() 'Clear the list of templates
+                For Each NodeElt As XmlNode In XmlDoc.DocumentElement.ChildNodes
+                    Select Case NodeElt.Name
 
-                    Case "template"
-                        Dim CurTemplate As New FileTemplate With {.ID = NodeElt.Attributes("id").Value,
+                        Case "template"
+                            Dim CurTemplate As New FileTemplate With {.ID = NodeElt.Attributes("id").Value,
                                                               .TemplateDescription = NodeElt.Attributes("description").Value,
                                                               .TemplateFileName = NodeElt.Attributes("filename").Value,
                                                               .TemplateVersion = New Version(NodeElt.Attributes("version").Value),
                                                               .MinPluginVersion = New Version(NodeElt.Attributes("minpluginversion").Value)}
-                        _templates.Add(CurTemplate)
-                        NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
+                            _templates.Add(CurTemplate)
+                            NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
 
-                    Case "folder"
+                        Case "folder"
 
-                        FoldersCounter += 1
-                        NewMenuXml &= "<menu id='Menu" & FoldersCounter & "' label='" & NodeElt.Attributes("description").Value & "' imageMso='Folder' >"
+                            FoldersCounter += 1
+                            NewMenuXml &= "<menu id='Menu" & FoldersCounter & "' label='" & NodeElt.Attributes("description").Value & "' imageMso='Folder' >"
 
-                        For Each SubNodeElt As XmlNode In NodeElt.ChildNodes
+                            For Each SubNodeElt As XmlNode In NodeElt.ChildNodes
 
-                            If SubNodeElt.Name = "template" Then 'this is not an elegant programming solution, ideally it should be recursive and code not repeated
-                                Dim CurTemplate As New FileTemplate With {.ID = SubNodeElt.Attributes("id").Value,
+                                If SubNodeElt.Name = "template" Then 'this is not an elegant programming solution, ideally it should be recursive and code not repeated
+                                    Dim CurTemplate As New FileTemplate With {.ID = SubNodeElt.Attributes("id").Value,
                                                           .TemplateDescription = SubNodeElt.Attributes("description").Value,
                                                           .TemplateFileName = SubNodeElt.Attributes("filename").Value,
                                                           .TemplateVersion = New Version(SubNodeElt.Attributes("version").Value),
                                                           .MinPluginVersion = New Version(SubNodeElt.Attributes("minpluginversion").Value)}
-                                _templates.Add(CurTemplate)
-                                NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
-                            End If
+                                    _templates.Add(CurTemplate)
+                                    NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
+                                End If
 
-                        Next
+                            Next
 
-                        NewMenuXml &= "</menu >"
-                End Select
+                            NewMenuXml &= "</menu >"
+                    End Select
 
-            Next
+                Next
+            End SyncLock
 
-            NewMenuXml &= "<button id='ButtonRefresh' label='Refresh list' imageMso='RefreshAll' onAction='RefreshListOfTemplatesCallback' />"
+            NewMenuXml &= "<button id='ButtonRefresh' label='Refresh list' imageMso='RefreshAll' onAction='RefreshListOfTemplates_MenuBtnClick' />"
             NewMenuXml &= "</menu>"
             _templatesMenuXml = NewMenuXml
 
         Catch ex As Exception
             Dim NewMenuXml = "<menu xmlns='http://schemas.microsoft.com/office/2006/01/customui' itemSize='normal'>"
-            NewMenuXml &= "<button id='ButtonError' label='Unable to read Templates list' imageMso='HighImportance' onAction='RefreshListOfTemplatesCallback' />"
-            NewMenuXml &= "<button id='ButtonRefresh' label='Refresh list' imageMso='RefreshAll' onAction='RefreshListOfTemplatesCallback' />"
+            NewMenuXml &= "<button id='ButtonError' label='Unable to read Templates list' imageMso='HighImportance' onAction='RefreshListOfTemplates_MenuBtnClick' />"
+            NewMenuXml &= "<button id='ButtonRefresh' label='Refresh list' imageMso='RefreshAll' onAction='RefreshListOfTemplates_MenuBtnClick' />"
             NewMenuXml &= "</menu>"
             _templatesMenuXml = NewMenuXml
         End Try
 
     End Sub
+
 
     Public Sub ReportTemplate_Open_Click(ByVal control As CustomUI.IRibbonControl)
 
@@ -596,7 +653,7 @@ Imports System.Xml
         Dim webClient = New WebClient
         Dim TemplateFileBuffer As Byte()
 
-        Dim InstallPath As String = Globals.ExcelApplication.UserLibraryPath & Globals.PluginXllInstallSubFolder
+        Dim InstallPath As String = Globals.ExcelApplication_UserLibraryPath & Globals.PluginXllInstallSubFolder
 
         Try
             If System.IO.Directory.Exists(InstallPath) = False Then System.IO.Directory.CreateDirectory(InstallPath) 'Create the folder if doesn't exist
@@ -625,50 +682,65 @@ Imports System.Xml
     End Function
 
     Private _UsedWarned As Boolean = False
-    Public Sub TemplateLoaded(TemplateID As String, TemplateVersion As String)
-        Try
-            If TemplateVersion = "" Then
-                'This must be an old template with undefined version
-                NewReportTemplateVersionAvailable()
-            Else
-                'Version is known
-                Dim CurrentFileVersion As New Version(TemplateVersion)
-                If CurrentFileVersion.CompareTo(_templates.Find(Function(c) c.ID = TemplateID).TemplateVersion) < 0 Then
-                    'If the version is lower than the latest template, warn user
+    Public Sub TemplateLoaded(TemplateID As String, TemplateVersion As String) 'This is called after a compatible Workbook is activated
+
+        SyncLock _templates_Lock 'Make sure this is not executed while the Template config file is being loaded
+
+            Dim CurTemplate As FileTemplate
+
+            If _templates.Exists(Function(c) c.ID = TemplateID) Then 'check if the template is in the list of defined templated
+                CurTemplate = _templates.Find(Function(c) c.ID = TemplateID)
+
+                If TemplateVersion = "" Then
+                    'This must be an old template with undefined version
                     NewReportTemplateVersionAvailable()
+                    _CurTemplateVersion = "(Not defined)"
                 Else
-                    ReportTemplateIsUpToDate()
+                    'Version is known
+                    Dim CurrentFileVersion As New Version(TemplateVersion)
+                    If CurrentFileVersion.CompareTo(CurTemplate.TemplateVersion) < 0 Then
+                        'If the version is lower than the latest template, warn user
+                        NewReportTemplateVersionAvailable()
+                    Else
+                        ReportTemplateIsUpToDate()
+                    End If
+                    _CurTemplateVersion = TemplateVersion
                 End If
-            End If
-            _CurTemplateDescr = _templates.Find(Function(c) c.ID = TemplateID).TemplateDescription
-            If _CurTemplateDescr = "" Then _CurTemplateDescr = "(Not defined)" 'This shound NOT happen!!
-            _CurTemplateVersion = GetCustomDocumentProperty(Globals.ThisWorkbook, "TemplateVersion")
-            If _CurTemplateVersion = "" Then _CurTemplateVersion = "(Not defined)"
+                _CurTemplateDescr = CurTemplate.TemplateDescription
+                If _CurTemplateDescr = "" Then _CurTemplateDescr = "(Not defined)" 'This shound NOT happen!!
 
-            Select Case TemplateID
-                Case "MROB"
-                    _TemplateImage = My.Resources.Icon32_MROB
-                Case "RTT"
-                    _TemplateImage = My.Resources.Icon32_RTT
-                Case "GRUT_MPS"
-                    _TemplateImage = My.Resources.Icon32_GRUT
-                Case Else
-                    _TemplateImage = Nothing
-            End Select
+            Else 'the template that the user opened is not in the list!?
 
+                _CurTemplateDescr = "(Not defined)"
+                _CurTemplateVersion = TemplateVersion
+                If _CurTemplateVersion = "" Then _CurTemplateVersion = "(Not defined)"
+                If _templates.Count = 0 Then
+                    'We have probably not yet loaded a templates config file!
+                    'Do nothing... all will be ok when the user will reactivate this workbook after the templates config file is loaded
+                Else
+                    'If we ended up here, it means that a template is missing in the template.xml, or the TemplateID property is not set for this workbook
+                    NewReportTemplateVersionAvailable()
+                    If _UsedWarned = False Then
+                        _UsedWarned = True 'We will only raise this message box one time
+                        MsgBox("You opened an old template version." & vbCrLf & "Please download the latest version from the templates download menu.", MsgBoxStyle.Exclamation, "Global planning Addin")
+                    End If
+                End If
 
-
-        Catch ex As Exception
-            'If we ended up here, it means that a template is missing in the template.xml, or the TemplateID property is not set for this workbook
-            _CurTemplateDescr = "(Not defined)"
-            _CurTemplateVersion = "(Not defined)"
-            NewReportTemplateVersionAvailable()
-            If _UsedWarned = False Then
-                _UsedWarned = True 'We will only raise this message box one time
-                MsgBox("You opened an old template version." & vbCrLf & "Please download the latest version from the templates download menu.", MsgBoxStyle.Exclamation, "Global planning Addin")
             End If
 
-        End Try
+        End SyncLock
+
+        Select Case TemplateID
+            Case "MROB"
+                _TemplateImage = My.Resources.Icon32_MROB
+            Case "RTT"
+                _TemplateImage = My.Resources.Icon32_RTT
+            Case "GRUT_MPS"
+                _TemplateImage = My.Resources.Icon32_GRUT
+            Case Else
+                _TemplateImage = Nothing
+        End Select
+
     End Sub
 
     Public Sub NonCompatibleFileLoaded()
