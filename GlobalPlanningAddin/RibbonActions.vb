@@ -627,6 +627,11 @@ Imports System.Xml
 
     Public Sub ReportTemplate_Open_Click(ByVal control As CustomUI.IRibbonControl)
 
+        If Globals.IsEditing Then
+            MsgBox("Please Exit the cell you are currently editing", MsgBoxStyle.Exclamation, "Global planning Addin")
+            Exit Sub
+        End If
+
         Dim selectedTemplateID As String = control.Tag
         Dim selectedTemplate As FileTemplate = _templates.Find(Function(c) c.ID = selectedTemplateID)
 
