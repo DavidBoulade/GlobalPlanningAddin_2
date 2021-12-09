@@ -28,10 +28,6 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         Return "GRUT_PROJECTION"
     End Function
 
-    Protected Overrides Function Get_DetailledView_Optional_OrderBySQLClause() As String
-        Return "ORDER BY STARTDATE ASC"
-    End Function
-
     Public Overrides Function Get_SummaryTable_ListOfModifiableColumns() As String()
         Return {
                 "Next_Dely_Date",
@@ -295,7 +291,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
             Case "Stock_Out_Date" : Return "CASE WHEN Stock_Out_Date='1970-01-01' THEN NULL ELSE FORMAT(Stock_Out_Date,'yyyy-MM-dd') END as Stock_Out_Date" '"Stock_Out_Date" '**
             Case "BISS" : Return "CASE WHEN BISS='1970-01-01' THEN NULL ELSE FORMAT(BISS,'yyyy-MM-dd') END as BISS" '"BISS" '**
             Case "ICW" : Return "CASE WHEN ICW='1970-01-01' THEN NULL ELSE FORMAT(ICW,'yyyy-MM-dd') END as ICW" '"ICW" '**
-
+            Case "Next_Dely_Date" : Return "CASE WHEN Next_Dely_Date='1970-01-01' THEN NULL ELSE FORMAT(Next_Dely_Date,'yyyy-MM-dd') END as Next_Dely_Date" '"Next_Dely_Date" '**
             Case Else : Return """" & DatabaseColName & """"
         End Select
     End Function
@@ -308,6 +304,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
 
     Public Overrides Function Get_DetailedView_Columns() As String()
         Return {
+                "Loc",
                 "DAY+",
                 "WEEK+",
                 "STARTDATE",
@@ -390,6 +387,35 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         Return _DetailedView_InfoDropDown_Items
     End Function
 
+    Protected Overrides Function Get_ReadDetailedProjectionData_QueryString(ReportDate As Date, KeyValues As String()) As String
+        Dim SQLQuery As String
+
+        ' Create the SQL query to read the detailled data from database. This overrides the default one from the DatabaseAdapterBase
+        'The KeyValues tables contains the Values of the Key fields for the current Summary table row
+        'In the same order as defined in the Get_SummaryTable_KeyColumns function
+        'KeyValues(0) -> Item
+        'KeyValues(1) -> Loc
+        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE"
+        SQLQuery &= " Item" & " = '" & KeyValues(0) & "'"
+        SQLQuery &= " AND ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "'"
+        SQLQuery &= " ORDER BY (CASE Loc WHEN '" & KeyValues(1) & "' THEN '0' ELSE Loc END) ASC, STARTDATE ASC" 'Show the current Loc first
+        SQLQuery &= ";"
+        Return SQLQuery
+
+    End Function
+
+    Public Overrides Function Get_DetailledView_ColumnFilter(KeyValues() As String) As List(Of ColumnFilter)
+        'The KeyValues tables contains the Values of the Key fields for the current Summary table row
+        'In the same order as defined in the Get_SummaryTable_KeyColumns function
+        'KeyValues(0) -> Item
+        'KeyValues(1) -> Loc
+
+        Static Columnsfilters As New List(Of ColumnFilter) From {
+            New ColumnFilter With {.ColumnNumber = 1, .FilterValue = KeyValues(1)}, '1 is "Loc"
+            New ColumnFilter With {.ColumnNumber = 3, .FilterValue = "<=W08"} '3 is "Week+"
+            }
+        Return Columnsfilters
+    End Function
 
 End Class
 

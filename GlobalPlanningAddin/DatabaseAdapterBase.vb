@@ -23,6 +23,15 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Public MustOverride Function Get_DetailedView_Columns() As String()
     Public MustOverride Function Get_DetailedView_CurItem_HeaderText() As String()
     Public MustOverride Function Get_DetailedView_InfoDropDown_Items() As List(Of String())
+    Public Class ColumnFilter
+        Public Property ColumnNumber As Integer
+        Public Property FilterValue As String
+    End Class
+
+    Public Overridable Function Get_DetailledView_ColumnFilter(KeyValues() As String) As List(Of ColumnFilter)
+        Static Columnsfilters As New List(Of ColumnFilter) 'no need to create a new list each time this is called
+        Return Columnsfilters 'By default, we return an empty list
+    End Function
 
     Protected ReadOnly _Connection As SqlConnection
     Protected _Command As SqlCommand
@@ -622,17 +631,10 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         End If
     End Sub
 
-    Public Function ReadDetailedProjectionData(ReportDate As Date, KeyValues As String()) As Integer
-        Dim ex As Exception
+    Protected Overridable Function Get_ReadDetailedProjectionData_QueryString(ReportDate As Date, KeyValues As String()) As String
         Dim SQLQuery As String
-        Dim NbFailedQueries As Integer
-        Dim ReportNbRow As Integer
 
-        If Not (_ResultDataSet Is Nothing) Then _ResultDataSet.Dispose()
-        If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
-        If Not (_Command Is Nothing) Then _Command.Dispose()
-
-        ' Create the SQL query to read data from database
+        ' Create the standard SQL query to read data from database. Each DatabaseAdapter can override this function if needed
         SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE "
         For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
             SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
@@ -641,6 +643,21 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         SQLQuery &= " AND ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "' "
         SQLQuery &= Get_DetailledView_Optional_OrderBySQLClause()
         SQLQuery &= ";"
+        Return SQLQuery
+
+    End Function
+
+    Public Function ReadDetailedProjectionData(ReportDate As Date, KeyValues As String()) As Integer
+        Dim ex As Exception
+
+        Dim NbFailedQueries As Integer
+        Dim ReportNbRow As Integer
+
+        If Not (_ResultDataSet Is Nothing) Then _ResultDataSet.Dispose()
+        If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
+        If Not (_Command Is Nothing) Then _Command.Dispose()
+
+        Dim SQLQuery As String = Get_ReadDetailedProjectionData_QueryString(ReportDate, KeyValues)
 
         'Now trigger it
         NbFailedQueries = 0
