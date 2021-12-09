@@ -215,6 +215,18 @@ Public Module Globals
 
     End Sub
 
+    Function IsEditing() As Boolean
+
+        If _ExcelApplication.Interactive = False Then Return False
+        Try
+            _ExcelApplication.Interactive = False
+            _ExcelApplication.Interactive = True
+        Catch
+            Return True
+        End Try
+        Return False
+    End Function
+
 End Module
 
 Friend Class OpenWorkbookData 'All workbooks that will be opened will get an instance of this class
