@@ -419,7 +419,7 @@ Friend Class DatabaseReader : Implements IDisposable
         ReportSheet.Outline.ShowLevels(ColumnLevels:=1)
     End Sub
 
-    Private Sub AddReportFilterAndSort(ReportNbRow As Integer)
+    Private Sub Add_SummaryReport_FilterAndSort(ReportNbRow As Integer)
 
         'Add autofilter *******************************************
         ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _ReportNbColumns)).AutoFilter(Field:=1) 'Field:=Report_Col_xxx, Criteria1:="=X"
@@ -535,7 +535,7 @@ Friend Class DatabaseReader : Implements IDisposable
             DrawAllBorders(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _ReportNbColumns)))
 
             _ProgressWindow.SetProgress(95, "Adding filter and sort")
-            AddReportFilterAndSort(ReportNbRow) 'Add autofilter and sort the report
+            Add_SummaryReport_FilterAndSort(ReportNbRow) 'Add autofilter and sort the report
             ReportFreezePanes() 'Freeze panes (this also activates the report sheet)
 
             _ProgressWindow.SetProgress(100, "OK")
@@ -863,12 +863,18 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Public Function ReadDetailedProjectionData(ReportDate As Date, KeyValues() As String) As Boolean
 
-        _ProgressWindow = New Form_Progress("Starting")
+        _ProgressWindow = New Form_Progress("Reading Data")
         _ProgressWindow.Show()
 
         Dim NbRows As Integer = _DBAdapter.ReadDetailedProjectionData(ReportDate, KeyValues)
 
+        _ProgressWindow.SetProgress(50, "Copying new data")
+
         CopyDetailedProjectionDataToReport(NbRows)
+
+        _ProgressWindow.SetProgress(80, "Applying filters")
+
+        Add_DetailedProjectionReport_AutoFilter(NbRows, KeyValues)
 
         _ProgressWindow.SetProgress(100, "Done")
 
@@ -878,18 +884,43 @@ Friend Class DatabaseReader : Implements IDisposable
         Return True
     End Function
 
+    Private Sub Add_DetailedProjectionReport_AutoFilter(ReportNbRow As Integer, KeyValues() As String)
+        Dim ColumnFilters As List(Of DatabaseAdapterBase.ColumnFilter)
+        ColumnFilters = _DBAdapter.Get_DetailledView_ColumnFilter(KeyValues)
+
+        'Add autofilter *******************************************
+        Select Case ColumnFilters.Count
+            Case 0
+                DetailsSheet.Range(
+                    DetailsSheet.Cells(DETAILS_FIRSTROW - 1, 1),
+                    DetailsSheet.Cells(DETAILS_FIRSTROW + ReportNbRow - 1, _DBAdapter.Get_DetailedView_Columns.Count)
+                    ).AutoFilter(Field:=1)
+            Case Else
+                For i As Integer = 0 To ColumnFilters.Count - 1
+                    DetailsSheet.Range(
+                        DetailsSheet.Cells(DETAILS_FIRSTROW - 1, 1),
+                        DetailsSheet.Cells(DETAILS_FIRSTROW + ReportNbRow - 1, _DBAdapter.Get_DetailedView_Columns.Count)
+                        ).AutoFilter(Field:=ColumnFilters(i).ColumnNumber, Criteria1:=ColumnFilters(i).FilterValue)
+                Next
+
+
+        End Select
+
+
+    End Sub
+
     Private Sub CopyDetailedProjectionDataToReport(NbRows As Integer)
 
         '30/09/2021: Fix display issue. If there is a filter in place, the resulting data is messed up
         If Not (IsNothing(DetailsSheet.AutoFilter)) AndAlso DetailsSheet.AutoFilter.FilterMode = True Then DetailsSheet.AutoFilter.ShowAllData()
 
         DetailsSheet.Range(DetailsSheet.Cells(DETAILS_FIRSTROW, 1), DetailsSheet.Cells(DETAILS_FIRSTROW + 100000, _DBAdapter.Get_DetailedView_Columns.Count)).ClearContents()
-        DetailsSheet.Range(DetailsSheet.Cells(DETAILS_FIRSTROW, 1), DetailsSheet.Cells(DETAILS_FIRSTROW + NbRows - 1, _DBAdapter.Get_DetailedView_Columns.Count)).Value = ConvertSummaryTableToArray(_DBAdapter.Get_DetailedView_Columns)
+        DetailsSheet.Range(DetailsSheet.Cells(DETAILS_FIRSTROW, 1), DetailsSheet.Cells(DETAILS_FIRSTROW + NbRows - 1, _DBAdapter.Get_DetailedView_Columns.Count)).Value = ConvertDetailsTableToArray(_DBAdapter.Get_DetailedView_Columns)
 
     End Sub
 
 
-    Public Function ConvertSummaryTableToArray(MappedColumns() As String) As Object(,)
+    Public Function ConvertDetailsTableToArray(MappedColumns() As String) As Object(,)
         Dim dtTable As System.Data.DataTable = _DBAdapter.DetailsTable_Dataset.Tables(0)
         Dim myArray(0 To dtTable.Rows.Count - 1, 0 To MappedColumns.Count - 1) As Object
 
