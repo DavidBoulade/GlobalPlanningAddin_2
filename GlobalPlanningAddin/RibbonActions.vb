@@ -487,7 +487,8 @@ Imports System.Xml
     End Sub
     Public Function Get_ChangeLogBtn_Visible(control As CustomUI.IRibbonControl) As Boolean
 
-        If Globals.ThisWorkbook.Application.ActiveSheet IsNot Globals.ReportSheet Then Return False 'if we are not on the right sheet, don't display the button
+        If Globals.ThisWorkbook Is Nothing Or Globals.ReportSheet Is Nothing Then Return False 'Globals.ThisWorkbook is nothing if the current workbook is not a compatible workbook
+        If Globals.ThisWorkbook.ActiveSheet IsNot Globals.ReportSheet Then Return False 'if we are not on the right sheet, don't display the button
         If Globals.Reader.Is_SummaryWorksheetColumn_Modifiable(Globals.ThisWorkbook.Application.ActiveCell.Column) Then 'check if the column is modifiable
             Return True
         Else
