@@ -318,11 +318,6 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "STEP2_Cut_Other_Dmd",
                 "STEP3_TotalSoldOfDay",
                 "STEP4_StockEndDay",
-                "CUT_VS_INDEPDMD_DOWNSTREAM_1",
-                "CUT_VS_INDEPDMD_DOWNSTREAM_2",
-                "CUT_VS_INDEPDMD_DOWNSTREAM_3",
-                "CUT_VS_INDEPDMD_DOWNSTREAM_4",
-                "CUT_VS_INDEPDMD_DOWNSTREAM_5",
                 "CUT_VS_INDEPDMD_DOWNSTREAM",
                 "ACTUALINTRANSIN",
                 "SCHEDRCPTS",
@@ -351,6 +346,11 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "STEP3_TotalSoldOfDay_ORDERS_ONLY",
                 "STEP4_StockEndDay_ORDERS_ONLY"
                 }
+        '"CUT_VS_INDEPDMD_DOWNSTREAM_1",
+        '"CUT_VS_INDEPDMD_DOWNSTREAM_2",
+        '"CUT_VS_INDEPDMD_DOWNSTREAM_3",
+        '"CUT_VS_INDEPDMD_DOWNSTREAM_4",
+        '"CUT_VS_INDEPDMD_DOWNSTREAM_5",
     End Function
 
     Public Overrides Function Get_DetailedView_CurItem_HeaderText() As String()
