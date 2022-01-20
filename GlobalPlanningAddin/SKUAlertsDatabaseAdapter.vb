@@ -9,7 +9,7 @@ Imports System.Data
 Public Class SKUAlertsDatabaseAdapter : Inherits DatabaseAdapterBase
 
     Protected Overrides Function Get_ConnectionString() As String
-        Return "Server=USSANTDB02P\NA_SUPPLY_CHAIN;Database=SKUAlerts;UID=PlanningWorker;PWD=dMD51$$z12ze56;"
+        Return "Server=USSANTDB02P\NA_SUPPLY_CHAIN;Database=SKUAlerts;UID=GlobalPlanningAddinUser;PWD=iojrgRGRE**$8421;"
     End Function
 
     Protected Overrides Function Get_DatabaseSchema() As String

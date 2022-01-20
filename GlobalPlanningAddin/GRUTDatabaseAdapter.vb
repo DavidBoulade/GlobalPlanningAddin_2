@@ -155,18 +155,18 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Risk_on_order_qty_D5",
                 "Risk_on_order_qty_D6",
                 "Risk_on_order_qty_7days",
-                "Total_Indep_Risk_Within_Leadtime",
-                "Local_Indep_Risk_Within_Leadtime",
-                "Local_Indep_Risk_Late_For_Replanishment",
-                "Local_Indep_Risk_Within_Replanishment_period",
-                "Local_Indep_Risk_After_Leadtime",
-                "Total_Risk_Within_Leadtime",
-                "Total_Risk_Late_For_Replanishment",
-                "Total_Risk_Within_Replanishment_period",
-                "Total_Risk_After_Leadtime",
-                "Total_Indep_Risk_Late_For_Replanishment",
-                "Total_Indep_Risk_Within_Replanishment_period",
-                "Total_Indep_Risk_After_Leadtime",
+                "Total_Indep_Risk_Before_Leadtime_From_Factory",
+                "Total_Indep_Risk_After_Leadtime_From_Factory",
+                "Total_Indep_Risk_Before_Leadtime_From_Source",
+                "Total_Indep_Risk_Within_Replanishment_period_From_Source",
+                "Local_Indep_Risk_Before_Leadtime_From_Factory",
+                "Local_Indep_Risk_After_Leadtime_From_Factory",
+                "Local_Indep_Risk_Before_Leadtime_From_Source",
+                "Local_Indep_Risk_Within_Replanishment_period_From_Source",
+                "Total_Risk_Before_Leadtime_From_Factory",
+                "Total_Risk_After_Leadtime_From_Factory",
+                "Total_Risk_Before_Leadtime_From_Source",
+                "Total_Risk_Within_Replanishment_period_From_Source",
                 "Total_Indep_Risk_PAST",
                 "Total_Indep_Risk_W01",
                 "Total_Indep_Risk_W02",
@@ -410,10 +410,10 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         'KeyValues(0) -> Item
         'KeyValues(1) -> Loc
 
-        Static Columnsfilters As New List(Of ColumnFilter) From {
-            New ColumnFilter With {.ColumnNumber = 1, .FilterValue = KeyValues(1)}, '1 is "Loc"
-            New ColumnFilter With {.ColumnNumber = 3, .FilterValue = "<=W08"} '3 is "Week+"
+        Dim Columnsfilters As New List(Of ColumnFilter) From {
+            New ColumnFilter With {.ColumnNumber = 1, .FilterValue = KeyValues(1)} '1 is "Loc"
             }
+        'New ColumnFilter With {.ColumnNumber = 3, .FilterValue = "<=8"} '3 is "Week+"
         Return Columnsfilters
     End Function
 
