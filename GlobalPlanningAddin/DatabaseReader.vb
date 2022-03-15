@@ -208,7 +208,7 @@ Friend Class DatabaseReader : Implements IDisposable
         'Header text
         ConfigSheet.Range(
                 ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_HEADERTEXT),
-                ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_FORMAT)).Copy()
+                ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_HEADERTEXT)).Copy()
         ReportSheet.Range(
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValues,,, True)
@@ -443,20 +443,38 @@ Friend Class DatabaseReader : Implements IDisposable
 
     End Sub
 
-    Private Sub ReportFreezePanes()
-        'Freeze panes ***************************
-        ReportSheet.Activate()
-        CType(ReportSheet.Cells(2, 3), Range).Select()
-        Try
-            Globals.ThisWorkbook.Windows(1).FreezePanes = False
-        Catch
-        End Try
-        Globals.ThisWorkbook.Windows(1).FreezePanes = True
+    Private Sub CountWsFrozenRowsnCols(ws As Worksheet, ByRef ReturnFrozenColumnsCount As Integer, ByRef ReturnFrozenRowsCount As Integer)
+        Dim CurSheet As Worksheet
+        CurSheet = DirectCast(ThisWorkbook.ActiveSheet, Worksheet)
+
+        'ws.Application.ScreenUpdating = False
+        ws.Activate()
+        If ws.Application.ActiveWindow.FreezePanes = True Then
+            ReturnFrozenColumnsCount = Globals.ThisWorkbook.Windows(1).SplitColumn
+            ReturnFrozenRowsCount = Globals.ThisWorkbook.Windows(1).SplitRow
+            ws.Application.ActiveWindow.FreezePanes = False
+        Else
+            ReturnFrozenColumnsCount = 0
+            ReturnFrozenRowsCount = 0
+        End If
+        CurSheet.Activate() 'return to active sheet   
+        'ws.Application.ScreenUpdating = True
+    End Sub
+
+    Private Sub WorksheetFreezePanes(ws As Worksheet, FrozenColumnsCount As Integer, FrozenRowsCount As Integer)
+        ''Freeze panes ***************************
+        ws.Activate()
+        CType(ReportSheet.Cells(FrozenRowsCount + 1, FrozenColumnsCount + 1), Range).Select()
+        If FrozenRowsCount > 0 Or FrozenColumnsCount > 0 Then
+            ws.Application.ActiveWindow.FreezePanes = True
+        End If
 
     End Sub
 
     Public Function CreateReport() As Boolean
         Dim ReportNbRow As Integer
+        Dim ReportFrozenColumnsCount As Integer
+        Dim ReportFrozenRowsCount As Integer
 
         Try
 
@@ -515,7 +533,7 @@ Friend Class DatabaseReader : Implements IDisposable
             End If
 
             _ProgressWindow.SetProgress(65, "Cleaning old worksheet")
-
+            CountWsFrozenRowsnCols(ReportSheet, ReportFrozenColumnsCount, ReportFrozenRowsCount) 'Count Frozen cols/rows and remove freeze panes
             CleanReportWorksheet() 'Delete everything from the report worksheet
 
             _ProgressWindow.SetProgress(70, "Formatting columns")
@@ -536,7 +554,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
             _ProgressWindow.SetProgress(95, "Adding filter and sort")
             Add_SummaryReport_FilterAndSort(ReportNbRow) 'Add autofilter and sort the report
-            ReportFreezePanes() 'Freeze panes (this also activates the report sheet)
+            WorksheetFreezePanes(ReportSheet, ReportFrozenColumnsCount, ReportFrozenRowsCount) 'Freeze panes (this also activates the report sheet)
 
             _ProgressWindow.SetProgress(100, "OK")
 

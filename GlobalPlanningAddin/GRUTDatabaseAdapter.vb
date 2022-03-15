@@ -36,7 +36,17 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "RCA_Comment",
                 "U_Comment",
                 "Fa_Comment",
-                "GDO_Comment"
+                "GDO_Comment",
+                "UserDefined_1",
+                "UserDefined_2",
+                "UserDefined_3",
+                "UserDefined_4",
+                "UserDefined_5",
+                "UserDefined_6",
+                "UserDefined_7",
+                "UserDefined_8",
+                "UserDefined_9",
+                "UserDefined_10"
                 }
     End Function
 
@@ -75,6 +85,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Cur_FromFactory_Total_Replanishment_LeadTime",
                 "Cur_DRPCovDur",
                 "Factory_ID",
+                "Article_Type",
                 "Article_SubType",
                 "Factory",
                 "Division",
@@ -82,6 +93,10 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Brand",
                 "Line",
                 "Product_Segment",
+                "Core_category",
+                "Market_category",
+                "Sub_category",
+                "Sp_category",
                 "Planner_Code",
                 "Planner_Name",
                 "SKU_Planner_Code",
@@ -273,7 +288,53 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "MinSSOH_W23",
                 "MinSSOH_W24",
                 "MinSSOH_W25",
-                "MinSSOH_W26"
+                "MinSSOH_W26",
+                "UserDefined_1",
+                "UserDefined_2",
+                "UserDefined_3",
+                "UserDefined_4",
+                "UserDefined_5",
+                "UserDefined_6",
+                "UserDefined_7",
+                "UserDefined_8",
+                "UserDefined_9",
+                "UserDefined_10",
+                "Local_Indep_Risk_M1",
+                "Local_Indep_Risk_M2",
+                "Local_Indep_Risk_M3",
+                "Local_Indep_Risk_M4",
+                "Local_Indep_Risk_M5",
+                "Local_Indep_Risk_M6",
+                "Total_Indep_Risk_M1",
+                "Total_Indep_Risk_M2",
+                "Total_Indep_Risk_M3",
+                "Total_Indep_Risk_M4",
+                "Total_Indep_Risk_M5",
+                "Total_Indep_Risk_M6",
+                "Total_Risk_M1",
+                "Total_Risk_M2",
+                "Total_Risk_M3",
+                "Total_Risk_M4",
+                "Total_Risk_M5",
+                "Total_Risk_M6",
+                "Indep_Dmd_M1",
+                "Indep_Dmd_M2",
+                "Indep_Dmd_M3",
+                "Indep_Dmd_M4",
+                "Indep_Dmd_M5",
+                "Indep_Dmd_M6",
+                "Dep_Dmd_M1",
+                "Dep_Dmd_M2",
+                "Dep_Dmd_M3",
+                "Dep_Dmd_M4",
+                "Dep_Dmd_M5",
+                "Dep_Dmd_M6",
+                "Other_Dmd_M1",
+                "Other_Dmd_M2",
+                "Other_Dmd_M3",
+                "Other_Dmd_M4",
+                "Other_Dmd_M5",
+                "Other_Dmd_M6"
                 }
     End Function
 
@@ -305,52 +366,54 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
     Public Overrides Function Get_DetailedView_Columns() As String()
         Return {
                 "Loc",
-                "DAY+",
                 "WEEK+",
                 "STARTDATE",
+                "SOURCE",
                 "STARTDATE_SOURCE",
                 "ALTSUPSDCONSTRPROJOH",
+                "SUPSDCONSTRPROJOH", 'Added 14/03/2022
                 "SS",
                 "SS_VS_OH",
-                "STEP0_StockBegDay",
-                "STEP1_ConsOtherDmd",
-                "STEP2_Cut_Ind_Dmd",
-                "STEP2_Cut_Other_Dmd",
-                "STEP3_TotalSoldOfDay",
-                "STEP4_StockEndDay",
-                "CUT_VS_INDEPDMD_DOWNSTREAM",
+                "CUT_COMMITINTRANSOUT", 'Updated 21/02/2022
+                "CUT_ADJFCSTCUSTORDERS", 'Updated 21/02/2022
+                "CUT_NONFCSTCUSTORDERS", 'Updated 21/02/2022
+                "CUT_ADJALLOCTOTFCST", 'Updated 21/02/2022
+                "CUT_DEPDMD", 'Updated 21/02/2022
+                "CUT_RECSHIP", 'Updated 21/02/2022
+                "CUT_PROXYRECSHIP", 'Updated 21/02/2022
+                "CUT_CONSTRPROXYDEMAND", 'Updated 21/02/2022
+                "CUT_IND_DMD", 'Updated 21/02/2022
+                "CUT_OTHER_DMD", 'Updated 21/02/2022
+                "CUT_VS_INDEPDMD_DOWNSTREAM", 'Updated 21/02/2022
+                "CUT_VS_INDEPDMD_NML", 'Updated 21/02/2022
                 "ACTUALINTRANSIN",
                 "SCHEDRCPTS",
                 "COMMITINTRANSIN",
                 "RECARRIV",
+                "PLANARRIV", 'Added 14/03/2022
+                "FIRMPLANARRIV", 'Added 14/03/2022
                 "CONSTRPROXYSUPPLY",
                 "PROXYRECARRIV",
-                "TOTAL_SUPPLY",
-                "TOTAL_SUPPLY_ORDERS_ONLY",
                 "ADJALLOCTOTFCST",
                 "ADJFCSTCUSTORDERS",
                 "NONFCSTCUSTORDERS",
-                "INDEP_DMD",
-                "INDEP_DMD_ORDERS_ONLY",
                 "COMMITINTRANSOUT",
                 "DEPDMD",
                 "RECSHIP",
+                "PLANSHIP", 'Added 14/03/2022
+                "FIRMPLANSHIP", 'Added 14/03/2022
                 "CONSTRPROXYDEMAND",
                 "PROXYRECSHIP",
-                "OTHER_DMD",
-                "OTHER_DMD_ORDERS_ONLY",
-                "STEP0_StockBegDay_ORDERS_ONLY",
-                "STEP1_ConsOtherDmd_ORDERS_ONLY",
-                "STEP2_Cut_Ind_Dmd_ORDERS_ONLY",
-                "STEP2_Cut_Other_Dmd_ORDERS_ONLY",
-                "STEP3_TotalSoldOfDay_ORDERS_ONLY",
-                "STEP4_StockEndDay_ORDERS_ONLY"
+                "CUT_COMMITINTRANSOUT_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_ADJFCSTCUSTORDERS_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_NONFCSTCUSTORDERS_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_DEPDMD_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_PROXYRECSHIP_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_CONSTRPROXYDEMAND_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_IND_DMD_ORDERS_ONLY", 'Updated 21/02/2022
+                "CUT_OTHER_DMD_ORDERS_ONLY" 'Updated 21/02/2022
                 }
-        '"CUT_VS_INDEPDMD_DOWNSTREAM_1",
-        '"CUT_VS_INDEPDMD_DOWNSTREAM_2",
-        '"CUT_VS_INDEPDMD_DOWNSTREAM_3",
-        '"CUT_VS_INDEPDMD_DOWNSTREAM_4",
-        '"CUT_VS_INDEPDMD_DOWNSTREAM_5",
+
     End Function
 
     Public Overrides Function Get_DetailedView_CurItem_HeaderText() As String()
