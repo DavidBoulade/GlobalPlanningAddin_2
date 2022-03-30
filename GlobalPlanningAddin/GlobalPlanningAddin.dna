@@ -60,6 +60,13 @@
               
              
             </group>
+
+            <group id="Other_tools" label="Tools" visible="true">
+
+              <!-- Paste list -->
+              <button id="Btn_paste_list" label="Paste list" getImage="Get_paste_list_Image" onAction="Btn_paste_list_Click" />
+
+            </group>
             
             
           </tab>
