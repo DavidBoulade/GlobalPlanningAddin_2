@@ -303,6 +303,7 @@ Imports System.Xml
 
         Globals.ReportDate = NewReportDate
         SetReportDateBtnLabel(Globals.ReportDate) 'Make sure the report date displayed is correct
+        SetWorksheetNamedRangeValue(Globals.ConfigSheet, "Report_Date", NewReportDate.ToOADate.ToString(Globalization.CultureInfo.InvariantCulture)) 'Create/Update a named range called "Report_Date" so that it can be usd in Excel formulas
 
         Globals.ReportSheet.Visible = XlSheetVisibility.xlSheetVisible
 
@@ -466,6 +467,23 @@ Imports System.Xml
     End Function
 
     '**************************************************************************************************************************************************
+    '*** Paste list button
+    '**************************************************************************************************************************************************
+
+    Public Sub Btn_paste_list_Click(control As CustomUI.IRibbonControl)
+
+        If My.Computer.Clipboard.ContainsText Then
+            ExcelApplication.ActiveCell.Value = Replace(Replace(My.Computer.Clipboard.GetText(), vbCrLf, ","), vbTab, ",")
+        End If
+
+    End Sub
+
+    Public Function Get_paste_list_Image(IRibbonControl As CustomUI.IRibbonControl) As System.Drawing.Bitmap
+        Return My.Resources.Icon32_paste_list
+    End Function
+
+
+    '**************************************************************************************************************************************************
     '*** Change log form
     '**************************************************************************************************************************************************
     Private ChangeLogForm As Form_AutoSize_DataGrid
@@ -503,6 +521,7 @@ Imports System.Xml
 
     Private _DownloadTemplatesConfigFile_Thread As Thread
     Private ReadOnly _templates As New List(Of FileTemplate)
+    Private ReadOnly _menuLinks As New List(Of MenuLink)
     Private ReadOnly _templates_Lock As New Object 'This lock is used to protect against concurrent accesses of _template
     Const DEFAULT_MENU_XML As String = "<menu xmlns='http://schemas.microsoft.com/office/2006/01/customui' itemSize='normal'><button id='BtnLoading' label='Loading...' imageMso='RefreshAll'/></menu >"
     Private _templatesMenuXml As String = DEFAULT_MENU_XML
@@ -574,6 +593,7 @@ Imports System.Xml
 
             SyncLock _templates_Lock 'Make sure no one tries to read the templates while we are making modifications to the list here
                 _templates.Clear() 'Clear the list of templates
+                _menuLinks.Clear()
                 For Each NodeElt As XmlNode In XmlDoc.DocumentElement.ChildNodes
                     Select Case NodeElt.Name
 
@@ -586,22 +606,40 @@ Imports System.Xml
                             _templates.Add(CurTemplate)
                             NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
 
+                        Case "link"
+                            Dim CurMenuLink As New MenuLink With {.ID = NodeElt.Attributes("id").Value,
+                                                              .LinkDescription = NodeElt.Attributes("description").Value,
+                                                              .Link = NodeElt.Attributes("link").Value,
+                                                              .MinPluginVersion = New Version(NodeElt.Attributes("minpluginversion").Value)}
+                            _menuLinks.Add(CurMenuLink)
+                            NewMenuXml &= "<button id='Btn_" & CurMenuLink.ID & "' tag='" & CurMenuLink.ID & "' label='" & CurMenuLink.LinkDescription & "' imageMso='FileLinksToFiles' onAction='MenuLink_Open_Click' />"
+
                         Case "folder"
 
                             FoldersCounter += 1
                             NewMenuXml &= "<menu id='Menu" & FoldersCounter & "' label='" & NodeElt.Attributes("description").Value & "' imageMso='Folder' >"
 
-                            For Each SubNodeElt As XmlNode In NodeElt.ChildNodes
+                            For Each SubNodeElt As XmlNode In NodeElt.ChildNodes 'this is not an elegant programming solution, ideally it should be recursive and code not repeated
 
-                                If SubNodeElt.Name = "template" Then 'this is not an elegant programming solution, ideally it should be recursive and code not repeated
-                                    Dim CurTemplate As New FileTemplate With {.ID = SubNodeElt.Attributes("id").Value,
-                                                          .TemplateDescription = SubNodeElt.Attributes("description").Value,
-                                                          .TemplateFileName = SubNodeElt.Attributes("filename").Value,
-                                                          .TemplateVersion = New Version(SubNodeElt.Attributes("version").Value),
-                                                          .MinPluginVersion = New Version(SubNodeElt.Attributes("minpluginversion").Value)}
-                                    _templates.Add(CurTemplate)
-                                    NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
-                                End If
+                                Select Case SubNodeElt.Name
+                                    Case "template"
+                                        Dim CurTemplate As New FileTemplate With {.ID = SubNodeElt.Attributes("id").Value,
+                                                                                  .TemplateDescription = SubNodeElt.Attributes("description").Value,
+                                                                                  .TemplateFileName = SubNodeElt.Attributes("filename").Value,
+                                                                                  .TemplateVersion = New Version(SubNodeElt.Attributes("version").Value),
+                                                                                  .MinPluginVersion = New Version(SubNodeElt.Attributes("minpluginversion").Value)}
+                                        _templates.Add(CurTemplate)
+                                        NewMenuXml &= "<button id='Btn_" & CurTemplate.ID & "' tag='" & CurTemplate.ID & "' label='" & CurTemplate.TemplateDescription & " (v" & CurTemplate.GetVersionText & ")" & "' imageMso='FileSaveAsExcelXlsx' onAction='ReportTemplate_Open_Click' />"
+
+                                    Case "link"
+                                        Dim CurMenuLink As New MenuLink With {.ID = SubNodeElt.Attributes("id").Value,
+                                                                            .LinkDescription = SubNodeElt.Attributes("description").Value,
+                                                                            .Link = SubNodeElt.Attributes("link").Value,
+                                                                            .MinPluginVersion = New Version(SubNodeElt.Attributes("minpluginversion").Value)}
+                                        _menuLinks.Add(CurMenuLink)
+                                        NewMenuXml &= "<button id='Btn_" & CurMenuLink.ID & "' tag='" & CurMenuLink.ID & "' label='" & CurMenuLink.LinkDescription & "' imageMso='FileLinksToFiles' onAction='MenuLink_Open_Click' />"
+
+                                End Select
 
                             Next
 
@@ -674,6 +712,41 @@ Imports System.Xml
         Catch ex As Exception
             ProgressWindow.Close()
             MsgBox("Unable to load the template : " & ex.Message, MsgBoxStyle.Critical, "Global planning Addin")
+        End Try
+
+
+
+    End Sub
+
+    Public Sub MenuLink_Open_Click(ByVal control As CustomUI.IRibbonControl)
+
+        If Globals.IsEditing Then
+            MsgBox("Please Exit the cell you are currently editing", MsgBoxStyle.Exclamation, "Global planning Addin")
+            Exit Sub
+        End If
+
+        Dim selectedLinkID As String = control.Tag
+        Dim selectedMenuLink As MenuLink = _menuLinks.Find(Function(c) c.ID = selectedLinkID)
+
+        If selectedMenuLink.MinPluginVersion.CompareTo(Globals.PluginVersion) < 0 Then
+            'Removing this message box as it is painful to click ok each time
+            ' If MsgBox("Do you want to download a new template (" & selectedTemplate.TemplateDescription & ") ?", MsgBoxStyle.OkCancel, "Global planning Addin") = MsgBoxResult.Cancel Then Exit Sub
+        Else
+            If MsgBox("This link requires a plugin version " & selectedMenuLink.MinPluginVersion.ToString & vbCrLf &
+                      "Your current version is " & Globals.PluginVersion.ToString & vbCrLf &
+                      "It is highly recommended to upgrade your addin before using this link." & vbCrLf &
+                      "Do you want to continue anyway?", MsgBoxStyle.YesNo, "Global planning Addin") = MsgBoxResult.No Then Exit Sub
+        End If
+
+
+        Try
+            ExcelApplication.Cursor = XlMousePointer.xlWait
+            Process.Start(selectedMenuLink.Link)
+        Catch ex As Exception
+            ExcelApplication.Cursor = XlMousePointer.xlDefault
+            MsgBox("Unable to load the link : " & ex.Message, MsgBoxStyle.Critical, "Global planning Addin")
+        Finally
+            ExcelApplication.Cursor = XlMousePointer.xlDefault
         End Try
 
 
@@ -798,4 +871,15 @@ Friend Class FileTemplate
             Return _TemplateVersion.ToString()
         End If
     End Function
+End Class
+
+'**************************************************************************************************************************************************
+'*** This class is used to store properties of menu links
+'**************************************************************************************************************************************************
+Friend Class MenuLink
+    Public Property ID As String
+    Public Property LinkDescription As String
+    Public Property Link As String
+    Public Property MinPluginVersion As Version
+
 End Class

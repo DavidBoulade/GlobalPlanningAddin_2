@@ -46,7 +46,8 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "UserDefined_7",
                 "UserDefined_8",
                 "UserDefined_9",
-                "UserDefined_10"
+                "UserDefined_10",
+                "RiskToReview_Flag"
                 }
     End Function
 
@@ -145,8 +146,29 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "FCST_PERF_M3",
                 "SALES_VS_CM_FCST",
                 "ServiceRiskFactor",
+                "RiskToReview_Flag",
+                "RiskToReview_Date",
+                "First_Supply_Date",
+                "First_Supply_Qty",
+                "First_Local_OOS_Date",
+                "First_Local_Recovery_Date",
+                "First_Local_Back_in_SS_Date",
+                "Final_Local_Recovery_Date",
+                "Final_Local_Back_in_SS_Date",
+                "First_OOS_Date",
+                "First_Total_Recovery_Date",
+                "Final_Total_Recovery_Date",
+                "First_Total_Indep_Risk_Date",
+                "Final_Total_Indep_Recovery_Date",
+                "Item_Total_Indep_Risk_6M",
                 "MinSSOH_Within_Leadtime",
                 "Total_IntransitIn_Qty",
+                "OnHand_Blocked",
+                "PRODQTY",
+                "PRODDATE",
+                "PRODORDERID",
+                "DMDTODATE",
+                "E_O",
                 "First_IntransitIn_Qty",
                 "First_IntransitIn_Arrival_Date",
                 "First_Committed_Qty",
@@ -209,7 +231,6 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Total_Indep_Risk_W24",
                 "Total_Indep_Risk_W25",
                 "Total_Indep_Risk_W26",
-                "Local_Indep_Risk_Past",
                 "Local_Indep_Risk_W01",
                 "Local_Indep_Risk_W02",
                 "Local_Indep_Risk_W03",
@@ -236,7 +257,32 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Local_Indep_Risk_W24",
                 "Local_Indep_Risk_W25",
                 "Local_Indep_Risk_W26",
-                "Total_Risk_Past",
+                "Local_Dep_Risk_W01",
+                "Local_Dep_Risk_W02",
+                "Local_Dep_Risk_W03",
+                "Local_Dep_Risk_W04",
+                "Local_Dep_Risk_W05",
+                "Local_Dep_Risk_W06",
+                "Local_Dep_Risk_W07",
+                "Local_Dep_Risk_W08",
+                "Local_Dep_Risk_W09",
+                "Local_Dep_Risk_W10",
+                "Local_Dep_Risk_W11",
+                "Local_Dep_Risk_W12",
+                "Local_Dep_Risk_W13",
+                "Local_Dep_Risk_W14",
+                "Local_Dep_Risk_W15",
+                "Local_Dep_Risk_W16",
+                "Local_Dep_Risk_W17",
+                "Local_Dep_Risk_W18",
+                "Local_Dep_Risk_W19",
+                "Local_Dep_Risk_W20",
+                "Local_Dep_Risk_W21",
+                "Local_Dep_Risk_W22",
+                "Local_Dep_Risk_W23",
+                "Local_Dep_Risk_W24",
+                "Local_Dep_Risk_W25",
+                "Local_Dep_Risk_W26",
                 "Total_Risk_W01",
                 "Total_Risk_W02",
                 "Total_Risk_W03",
@@ -289,6 +335,32 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "MinSSOH_W24",
                 "MinSSOH_W25",
                 "MinSSOH_W26",
+                "Min_AltSupsdConstrProjOH_W01",
+                "Min_AltSupsdConstrProjOH_W02",
+                "Min_AltSupsdConstrProjOH_W03",
+                "Min_AltSupsdConstrProjOH_W04",
+                "Min_AltSupsdConstrProjOH_W05",
+                "Min_AltSupsdConstrProjOH_W06",
+                "Min_AltSupsdConstrProjOH_W07",
+                "Min_AltSupsdConstrProjOH_W08",
+                "Min_AltSupsdConstrProjOH_W09",
+                "Min_AltSupsdConstrProjOH_W10",
+                "Min_AltSupsdConstrProjOH_W11",
+                "Min_AltSupsdConstrProjOH_W12",
+                "Min_AltSupsdConstrProjOH_W13",
+                "Min_AltSupsdConstrProjOH_W14",
+                "Min_AltSupsdConstrProjOH_W15",
+                "Min_AltSupsdConstrProjOH_W16",
+                "Min_AltSupsdConstrProjOH_W17",
+                "Min_AltSupsdConstrProjOH_W18",
+                "Min_AltSupsdConstrProjOH_W19",
+                "Min_AltSupsdConstrProjOH_W20",
+                "Min_AltSupsdConstrProjOH_W21",
+                "Min_AltSupsdConstrProjOH_W22",
+                "Min_AltSupsdConstrProjOH_W23",
+                "Min_AltSupsdConstrProjOH_W24",
+                "Min_AltSupsdConstrProjOH_W25",
+                "Min_AltSupsdConstrProjOH_W26",
                 "UserDefined_1",
                 "UserDefined_2",
                 "UserDefined_3",
@@ -305,6 +377,12 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Local_Indep_Risk_M4",
                 "Local_Indep_Risk_M5",
                 "Local_Indep_Risk_M6",
+                "Local_Dep_Risk_M1",
+                "Local_Dep_Risk_M2",
+                "Local_Dep_Risk_M3",
+                "Local_Dep_Risk_M4",
+                "Local_Dep_Risk_M5",
+                "Local_Dep_Risk_M6",
                 "Total_Indep_Risk_M1",
                 "Total_Indep_Risk_M2",
                 "Total_Indep_Risk_M3",
@@ -334,7 +412,25 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Other_Dmd_M3",
                 "Other_Dmd_M4",
                 "Other_Dmd_M5",
-                "Other_Dmd_M6"
+                "Other_Dmd_M6",
+                "Total_Indep_Risk_1M",
+                "Total_Indep_Risk_2M",
+                "Total_Indep_Risk_3M",
+                "Total_Indep_Risk_4M",
+                "Total_Indep_Risk_5M",
+                "Total_Indep_Risk_6M",
+                "Local_Indep_Risk_1M",
+                "Local_Indep_Risk_2M",
+                "Local_Indep_Risk_3M",
+                "Local_Indep_Risk_4M",
+                "Local_Indep_Risk_5M",
+                "Local_Indep_Risk_6M",
+                "Total_Risk_1M",
+                "Total_Risk_2M",
+                "Total_Risk_3M",
+                "Total_Risk_4M",
+                "Total_Risk_5M",
+                "Total_Risk_6M"
                 }
     End Function
 
@@ -342,7 +438,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
 
         Select Case DatabaseColName
             Case "First_IntransitIn_Arrival_Date" : Return "CASE WHEN First_IntransitIn_Arrival_Date='1970-01-01' THEN NULL ELSE FORMAT(First_IntransitIn_Arrival_Date,'yyyy-MM-dd') END as First_IntransitIn_Arrival_Date" '"First_IntransitIn_Arrival_Date" '**
-            Case "First_Committed_Date" : Return "CASE WHEN First_Committed_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Committed_Date,'yyyy-MM-dd') END as First_Committed_Date" '"First_Committed_Date" '**
+        Case "First_Committed_Date" : Return "CASE WHEN First_Committed_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Committed_Date,'yyyy-MM-dd') END as First_Committed_Date" '"First_Committed_Date" '**
             Case "First_Recship_Date" : Return "CASE WHEN First_Recship_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Recship_Date,'yyyy-MM-dd') END as First_Recship_Date" '"First_Recship_Date" '**
             Case "GDO_Reviewed" : Return "CASE WHEN GDO_Reviewed='1970-01-01' THEN NULL ELSE FORMAT(GDO_Reviewed,'yyyy-MM-dd') END as GDO_Reviewed" '"GDO_Reviewed" '**
             Case "REVIEWED_DATE" : Return "CASE WHEN REVIEWED_DATE='1970-01-01' THEN NULL ELSE FORMAT(REVIEWED_DATE,'yyyy-MM-dd') END as REVIEWED_DATE" '"REVIEWED_DATE" '**
@@ -352,7 +448,32 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
             Case "Stock_Out_Date" : Return "CASE WHEN Stock_Out_Date='1970-01-01' THEN NULL ELSE FORMAT(Stock_Out_Date,'yyyy-MM-dd') END as Stock_Out_Date" '"Stock_Out_Date" '**
             Case "BISS" : Return "CASE WHEN BISS='1970-01-01' THEN NULL ELSE FORMAT(BISS,'yyyy-MM-dd') END as BISS" '"BISS" '**
             Case "ICW" : Return "CASE WHEN ICW='1970-01-01' THEN NULL ELSE FORMAT(ICW,'yyyy-MM-dd') END as ICW" '"ICW" '**
-            Case "Next_Dely_Date" : Return "CASE WHEN Next_Dely_Date='1970-01-01' THEN NULL ELSE FORMAT(Next_Dely_Date,'yyyy-MM-dd') END as Next_Dely_Date" '"Next_Dely_Date" '**
+            Case "Next_Dely_Date" : Return "CASE WHEN Next_Dely_Date='1970-01-01' THEN NULL ELSE FORMAT(Next_Dely_Date,'yyyy-MM-dd') END as Next_Dely_Date" '"Next_Dely_Date" '***
+
+            Case "Total_Indep_Risk_1M" : Return "Total_Indep_Risk_PAST + Total_Indep_Risk_M1"
+            Case "Total_Indep_Risk_2M" : Return "Total_Indep_Risk_PAST + Total_Indep_Risk_M1 + Total_Indep_Risk_M2"
+            Case "Total_Indep_Risk_3M" : Return "Total_Indep_Risk_PAST + Total_Indep_Risk_M1 + Total_Indep_Risk_M2 + Total_Indep_Risk_M3"
+            Case "Total_Indep_Risk_4M" : Return "Total_Indep_Risk_PAST + Total_Indep_Risk_M1 + Total_Indep_Risk_M2 + Total_Indep_Risk_M3 + Total_Indep_Risk_M4"
+            Case "Total_Indep_Risk_5M" : Return "Total_Indep_Risk_PAST + Total_Indep_Risk_M1 + Total_Indep_Risk_M2 + Total_Indep_Risk_M3 + Total_Indep_Risk_M4 + Total_Indep_Risk_M5"
+            Case "Total_Indep_Risk_6M" : Return "Total_Indep_Risk_PAST + Total_Indep_Risk_M1 + Total_Indep_Risk_M2 + Total_Indep_Risk_M3 + Total_Indep_Risk_M4 + Total_Indep_Risk_M5 + Total_Indep_Risk_M6"
+
+            Case "Local_Indep_Risk_1M" : Return "Local_Indep_Risk_M1"
+            Case "Local_Indep_Risk_2M" : Return "Local_Indep_Risk_M1 + Local_Indep_Risk_M2"
+            Case "Local_Indep_Risk_3M" : Return "Local_Indep_Risk_M1 + Local_Indep_Risk_M2 + Local_Indep_Risk_M3"
+            Case "Local_Indep_Risk_4M" : Return "Local_Indep_Risk_M1 + Local_Indep_Risk_M2 + Local_Indep_Risk_M3 + Local_Indep_Risk_M4"
+            Case "Local_Indep_Risk_5M" : Return "Local_Indep_Risk_M1 + Local_Indep_Risk_M2 + Local_Indep_Risk_M3 + Local_Indep_Risk_M4 + Local_Indep_Risk_M5"
+            Case "Local_Indep_Risk_6M" : Return "Local_Indep_Risk_M1 + Local_Indep_Risk_M2 + Local_Indep_Risk_M3 + Local_Indep_Risk_M4 + Local_Indep_Risk_M5 + Local_Indep_Risk_M6"
+
+            Case "Total_Risk_1M" : Return "Total_Risk_M1"
+            Case "Total_Risk_2M" : Return "Total_Risk_M1 + Total_Risk_M2"
+            Case "Total_Risk_3M" : Return "Total_Risk_M1 + Total_Risk_M2 + Total_Risk_M3"
+            Case "Total_Risk_4M" : Return "Total_Risk_M1 + Total_Risk_M2 + Total_Risk_M3 + Total_Risk_M4"
+            Case "Total_Risk_5M" : Return "Total_Risk_M1 + Total_Risk_M2 + Total_Risk_M3 + Total_Risk_M4 + Total_Risk_M5"
+            Case "Total_Risk_6M" : Return "Total_Risk_M1 + Total_Risk_M2 + Total_Risk_M3 + Total_Risk_M4 + Total_Risk_M5 + Total_Risk_M6"
+
+            Case "PRODDATE" : Return "CASE WHEN PRODDATE='1970-01-01' THEN NULL ELSE FORMAT(PRODDATE,'yyyy-MM-dd') END as PRODDATE" '"PRODDATE" '***
+            Case "RiskToReview_Flag" : Return "CASE WHEN RiskToReview_Flag=1 THEN 1 WHEN RiskToReview_Flag IS NULL THEN NULL ELSE 0 END as RiskToReview_Flag"
+
             Case Else : Return """" & DatabaseColName & """"
         End Select
     End Function

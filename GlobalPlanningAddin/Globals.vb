@@ -163,6 +163,21 @@ Public Module Globals
         Return ""
     End Function
 
+    Public Sub SetWorksheetNamedRangeValue(Ws As Microsoft.Office.Interop.Excel.Worksheet, NamedRangeName As String, NewValue As String)
+        Dim FoundSw As Boolean = False
+        For Each CustomNamedRange As Microsoft.Office.Interop.Excel.Name In Ws.Names
+            If Strings.InStr(UCase(CustomNamedRange.Name), UCase(NamedRangeName)) <> 0 Then
+                'The Name already exists, just update it
+                CustomNamedRange.RefersTo = NewValue
+                FoundSw = True
+                Exit For
+            End If
+        Next
+        If FoundSw = False Then
+            'The name doesn't exist, create it now
+            Dim NewName As Name = Ws.Names.Add(NamedRangeName, NewValue, True)
+        End If
+    End Sub
 
 
     'This function is needed as the standard .fileExists() function doesn't always work properly over the network
