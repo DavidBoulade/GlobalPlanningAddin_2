@@ -9,6 +9,9 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Protected MustOverride Function Get_DatabaseSchema() As String
     Protected MustOverride Function Get_SummaryTable_Name() As String
     Protected MustOverride Function Get_SummaryTableUpdates_TableName() As String
+    Protected Overridable Function Get_SummaryTableUpdates_ViewName() As String
+        Return Get_SummaryTableUpdates_TableName()
+    End Function
     Protected MustOverride Function Get_DetailsTable_Name() As String
     Public MustOverride Function Get_SummaryTable_ListOfModifiableColumns() As String()
     Public MustOverride Function Get_SummaryTable_ListOfNumericColumns() As String()
@@ -429,7 +432,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1 'Create one column per Key
             SQLQuery &= Get_SummaryTable_KeyColumns(i) & ","
         Next
-        SQLQuery &= "COLUMNAME,OLDVALUE,NEWVALUE,STATUS,COMMENT FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_TableName() & "]"
+        SQLQuery &= "COLUMNAME,OLDVALUE,NEWVALUE,STATUS,COMMENT FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_ViewName() & "]"
         SQLQuery &= "WHERE [ChangedBy]='" & UserName & "' AND "
         SQLQuery &= "[ChangeDateTime]='" & ChangeDateTime.ToString("yyyy'-'MM'-'dd' 'HH':'mm':'ss'.000'") & "'"
 
@@ -540,7 +543,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                         If UserChoiceToAllConflicts = "" Then
                             'the user didn't make a decision yet
 
-                            'create a new conflic form with the details of the problem
+                            'create a new conflict form with the details of the problem
                             ConflictForm = New Form_Conflict(
                                                         KeyValues,
                                                         ColumnName,
@@ -843,7 +846,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
-        SQLQuery = "SELECT TOP(50) ChangeDateTime, ReportDate, ChangedBy, OldValue, NewValue, Status FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_TableName() & "] WHERE "
+        SQLQuery = "SELECT TOP(50) ChangeDateTime, ReportDate, ChangedBy, OldValue, NewValue, Status FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_ViewName() & "] WHERE "
         For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
             SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
             SQLQuery &= "AND "

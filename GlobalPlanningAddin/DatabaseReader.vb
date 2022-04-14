@@ -219,27 +219,47 @@ Friend Class DatabaseReader : Implements IDisposable
 
                 Dim FilterText As String = ""
 
+                If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
+                    FilterText &= "("
+                End If
+
                 If NbValues_Std_Incl > 0 Then
-                    FilterText = SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " IN (" & Values_Std_Text_Incl & ")"
+                    FilterText &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " IN (" & Values_Std_Text_Incl & ")"
                 End If
 
                 If NbValues_Std_Excl > 0 Then
-                    If FilterText <> "" Then FilterText &= " AND "
-                    FilterText = FilterText & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " NOT IN (" & Values_Std_Text_Excl & ")"
+                    If NbValues_Std_Incl > 0 Then FilterText &= " AND "
+                    FilterText &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " NOT IN (" & Values_Std_Text_Excl & ")"
+                End If
+
+                If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
+                    FilterText &= ")"
+                End If
+
+                If NbValues_Std_Incl + NbValues_Std_Excl > 0 And NbValues_Like_Incl + NbValues_Like_Excl > 0 Then
+                    FilterText &= " OR "
+                End If
+
+                If NbValues_Like_Incl > 0 And NbValues_Like_Excl > 0 Then
+                    FilterText &= "("
                 End If
 
                 If NbValues_Like_Incl > 0 Then
-                    If FilterText <> "" Then FilterText &= " AND "
-                    FilterText = FilterText & " (" & Values_Like_Text_Incl & ")"
+                    'If FilterText <> "" Then FilterText &= " AND "
+                    FilterText &= " (" & Values_Like_Text_Incl & ")"
                 End If
 
                 If NbValues_Like_Excl > 0 Then
-                    If FilterText <> "" Then FilterText &= " AND "
-                    FilterText = FilterText & " (" & Values_Like_Text_Excl & ")"
+                    If NbValues_Like_Incl > 0 Then FilterText &= " AND "
+                    FilterText &= " (" & Values_Like_Text_Excl & ")"
+                End If
+
+                If NbValues_Like_Incl > 0 And NbValues_Like_Excl > 0 Then
+                    FilterText &= ")"
                 End If
 
 
-                _DBAdapter.AddQueryFilter(FilterText)
+                _DBAdapter.AddQueryFilter("(" & FilterText & ")")
 
             End If
 
@@ -265,10 +285,20 @@ Friend Class DatabaseReader : Implements IDisposable
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValues,,, True)
 
         'Header Format
-        CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Copy()
+        ConfigSheet.Range(
+                ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_COLUMNNAME),
+                ConfigSheet.Cells(ReportNbRow + PARAMS_FIRSTROW - 1, PARAMS_COL_COLUMNNAME)).Copy()
         ReportSheet.Range(
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+
+        'Copy Header comments
+        ConfigSheet.Range(
+                ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_HEADERTEXT),
+                ConfigSheet.Cells(ReportNbRow + PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT)).Copy()
+        ReportSheet.Range(
+                ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
+                ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteComments,,, True)
 
         'Header row Height
         CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = CType(ConfigSheet.Rows(PARAMS_FIRSTROW - 1), Range).RowHeight
@@ -299,86 +329,6 @@ Friend Class DatabaseReader : Implements IDisposable
                     ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
         End If
 
-
-        'The below commented code is slower as it involes too many COM calls
-        'Dim ColIndex As Integer
-
-        ''Setup the columns *****************************************
-
-        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).RowHeight = 45
-        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).HorizontalAlignment = XlHAlign.xlHAlignCenter
-        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).VerticalAlignment = XlVAlign.xlVAlignTop
-        'CType(ReportSheet.Rows(REPORT_FIRSTROW - 1), Range).WrapText = True
-
-        'For ColIndex = 0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1
-        '    'Column
-        '    If _Report_Param_Row(ColIndex) > 0 Then
-        '        With ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex)))
-        '            .NumberFormat = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).NumberFormat
-        '            .Interior.Color = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Interior.Color
-        '            '.ColumnWidth = CellValue_Int(ConfigSheet, _Report_Param_Row(ColIndex), PARAMS_COL_WIDTH) 'we will do that after loading the data as it changes columns width
-        '            .Locked = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Locked
-        '            .Font.Name = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Name
-        '            '.Font.Background = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Background
-        '            .Font.Bold = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Bold
-        '            .Font.Color = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Color
-        '            '.Font.ColorIndex = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ColorIndex
-        '            .Font.FontStyle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.FontStyle
-        '            .Font.Italic = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Italic
-        '            .Font.Size = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.Size
-        '            '.Font.ThemeColor = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ThemeColor
-        '            '.Font.ThemeFont = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.ThemeFont
-        '            '.Font.TintAndShade = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Font.TintAndShade
-        '            .HorizontalAlignment = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).HorizontalAlignment
-        '            .VerticalAlignment = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).VerticalAlignment
-
-        '            'Validation
-        '            If HasValidation(CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range)) Then
-        '                Try
-        '                    With .Validation
-        '                        .Delete()
-        '                        .Add(CType(CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Type, XlDVType),
-        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.AlertStyle,
-        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Operator,
-        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Formula1,
-        '                            CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.Formula2)
-
-        '                        .IgnoreBlank = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.IgnoreBlank
-        '                        .InCellDropdown = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InCellDropdown
-        '                        .InputTitle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InputTitle
-        '                        .ErrorTitle = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ErrorTitle
-        '                        .InputMessage = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.InputMessage
-        '                        .ErrorMessage = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ErrorMessage
-        '                        .ShowInput = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ShowInput
-        '                        .ShowError = CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Validation.ShowError
-        '                    End With
-        '                Catch ex As Exception
-        '                    MsgBox("Incorrect data validation definition for column '" & _Param_ColHeader_Rng.CellValue_Str(_Report_ColNumber(ColIndex)) & "'", MsgBoxStyle.Critical, "Global planning Addin")
-        '                End Try
-        '            End If
-
-        '            'Conditional format
-        '            If CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).FormatConditions.Count > 0 Then
-        '                CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Copy()
-        '                .PasteSpecial(XlPasteType.xlPasteAllMergingConditionalFormats)
-        '                Globals.ThisWorkbook.Application.CutCopyMode = CType(0, XlCutCopyMode)
-        '            End If
-
-        '        End With
-
-        '        'CType(ConfigSheet.Cells(_Report_Param_Row(ColIndex), PARAMS_COL_FORMAT), Range).Copy()
-        '        'ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))).PasteSpecial(XlPasteType.xlPasteFormats)
-        '        'ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))).PasteSpecial(XlPasteType.xlPasteValidation)
-
-        '        ''Header
-        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Value = _Param_ColHeader_Rng.CellValue_Str(_Report_ColNumber(ColIndex))
-        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Interior.Color = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Interior.Color
-        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Color = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Color
-        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Bold = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Bold
-        '        CType(ReportSheet.Cells(REPORT_FIRSTROW - 1, _Report_ColNumber(ColIndex)), Range).Font.Name = CType(ConfigSheet.Cells(PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT), Range).Font.Name
-
-        '    End If
-        'Next ColIndex
 
     End Sub
 
@@ -533,6 +483,8 @@ Friend Class DatabaseReader : Implements IDisposable
             _ProgressWindow.Show()
 
             Globals.ThisWorkbook.Application.ScreenUpdating = False
+
+            If ConfigSheet.AutoFilterMode = True Then ConfigSheet.AutoFilter.ShowAllData()
 
             _ProgressWindow.SetProgress(5, "Reading params")
 
@@ -736,6 +688,20 @@ Friend Class DatabaseReader : Implements IDisposable
             If i < _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
         Next i
 
+        'Create a table that says for each modifiable column if it is displayed, so we don't have to check for each row
+        Dim NbModifiableColumns As Integer = _DBAdapter.Get_SummaryTable_ListOfModifiableColumns.Count
+        Dim IsModifiableColumnMapped(0 To NbModifiableColumns - 1) As Boolean
+        For i = 0 To NbModifiableColumns - 1
+            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.Get_SummaryTable_ListOfModifiableColumns(i))
+            CurColNum = _Report_ColNumber(ColIndex)
+
+            If CurColNum <> 0 Then
+                IsModifiableColumnMapped(i) = True
+            Else
+                IsModifiableColumnMapped(i) = False
+            End If
+        Next
+
         Do While KeyValues(0) <> "" 'Loop while the first key has some value; Should we check also other keys?
             'process that row
 
@@ -743,12 +709,11 @@ Friend Class DatabaseReader : Implements IDisposable
             Dim OriginalDataSetRecord As DataRow = _DBAdapter.Get_SummaryTable_DatasetRecord(KeyValues)
             If Not (OriginalDataSetRecord Is Nothing) Then 'if we find it
 
-                For Each ModifiableColumnName As String In _DBAdapter.Get_SummaryTable_ListOfModifiableColumns
+                For i = 0 To NbModifiableColumns - 1
 
-                    ColIndex = _DBAdapter.GetColIndexFromDatabaseName(ModifiableColumnName)
-                    CurColNum = _Report_ColNumber(ColIndex)
+                    Dim ModifiableColumnName As String = _DBAdapter.Get_SummaryTable_ListOfModifiableColumns(i)
 
-                    If CurColNum <> 0 Then 'if the row is listed for display
+                    If IsModifiableColumnMapped(i) Then
 
                         Dim Cur_Col As ExcelRangeArray = ColumnsSnapshot.Find(Function(c) c.ColumnName = ModifiableColumnName)
 
