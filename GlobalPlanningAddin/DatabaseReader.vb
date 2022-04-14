@@ -287,7 +287,7 @@ Friend Class DatabaseReader : Implements IDisposable
         'Header Format
         ConfigSheet.Range(
                 ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_COLUMNNAME),
-                ConfigSheet.Cells(ReportNbRow + PARAMS_FIRSTROW - 1, PARAMS_COL_COLUMNNAME)).Copy()
+                ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_COLUMNNAME)).Copy()
         ReportSheet.Range(
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
@@ -295,7 +295,7 @@ Friend Class DatabaseReader : Implements IDisposable
         'Copy Header comments
         ConfigSheet.Range(
                 ConfigSheet.Cells(PARAMS_FIRSTROW, PARAMS_COL_HEADERTEXT),
-                ConfigSheet.Cells(ReportNbRow + PARAMS_FIRSTROW - 1, PARAMS_COL_HEADERTEXT)).Copy()
+                ConfigSheet.Cells(PARAMS_FIRSTROW + _Param_ColName_Rng.NbRows - 1, PARAMS_COL_HEADERTEXT)).Copy()
         ReportSheet.Range(
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, 1),
                 ReportSheet.Cells(REPORT_FIRSTROW - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteComments,,, True)

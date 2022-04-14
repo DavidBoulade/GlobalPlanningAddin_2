@@ -187,6 +187,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "First_Recship_Date",
                 "Next_Dely_Qty",
                 "Next_Dely_Date",
+                "Service_RootCause_ID",
                 "Service_RootCause_Level_3",
                 "Service_RootCause_Level_2",
                 "Service_RootCause_Level_1",
