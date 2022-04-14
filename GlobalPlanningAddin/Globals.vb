@@ -118,13 +118,6 @@ Public Module Globals
             If _ReportSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the report worksheet")
             If _DetailsSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the detailed view worksheet")
 
-            'If it is the first time we see this workbook, do a few adjustments
-            If ThisIsANewWorkbook = True Then
-                _ConfigSheet.Activate() 'Start from the config worksheet
-                '_DetailsSheet.PageSetup.Zoom = 85 'Zoom out a little bit
-                _ReportSheet.Visible = XlSheetVisibility.xlSheetHidden
-                _DetailsSheet.Visible = XlSheetVisibility.xlSheetHidden
-            End If
 
             _CurRibbonActions.TemplateLoaded(GetCustomDocumentProperty(Wb, "TemplateID"), GetCustomDocumentProperty(Wb, "TemplateVersion"))
 

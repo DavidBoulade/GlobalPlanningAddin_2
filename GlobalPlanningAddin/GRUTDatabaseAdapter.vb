@@ -17,11 +17,15 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
     End Function
 
     Protected Overrides Function Get_SummaryTable_Name() As String
-        Return "GRUT"
+        Return "GRUT_VIEW"
     End Function
 
-    Protected Overrides Function Get_SummaryTableUpdates_TableName() As String
+    Protected Overrides Function Get_SummaryTableUpdates_TableName() As String 'Used to send changes to database
         Return "GRUT_UPDATES"
+    End Function
+
+    Protected Overrides Function Get_SummaryTableUpdates_ViewName() As String 'Used to read change history
+        Return "GRUT_UPDATES_VIEW"
     End Function
 
     Protected Overrides Function Get_DetailsTable_Name() As String
@@ -32,7 +36,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         Return {
                 "Next_Dely_Date",
                 "Next_Dely_Qty",
-                "Root_Cause",
+                "Service_RootCause_Level_3",
                 "RCA_Comment",
                 "U_Comment",
                 "Fa_Comment",
@@ -47,7 +51,12 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "UserDefined_8",
                 "UserDefined_9",
                 "UserDefined_10",
-                "RiskToReview_Flag"
+                "RiskToReview_Flag",
+                "VAR_COMMENT",
+                "Service_Risk_Action",
+                "Service_Risk_Action_Owner",
+                "Service_Risk_Action_Date",
+                "Service_Risk_Constraint"
                 }
     End Function
 
@@ -61,7 +70,8 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
     'List all modifiable columns with Date type
     Public Overrides Function Get_SummaryTable_ListOfDateColumns() As String()
         Return {
-                "Next_Dely_Date" 'date
+                "Next_Dely_Date",
+                "Service_Risk_Action_Date"
                 }
     End Function
 
@@ -177,12 +187,20 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "First_Recship_Date",
                 "Next_Dely_Qty",
                 "Next_Dely_Date",
-                "Root_Cause",
+                "Service_RootCause_Level_3",
+                "Service_RootCause_Level_2",
+                "Service_RootCause_Level_1",
+                "Service_RootCause_Accountable",
                 "RCA_Comment",
                 "U_Comment",
                 "Fa_Comment",
                 "GDO_Comment",
                 "GDO_Reviewed",
+                "VAR_COMMENT",
+                "Service_Risk_Action",
+                "Service_Risk_Action_Owner",
+                "Service_Risk_Action_Date",
+                "Service_Risk_Constraint",
                 "REVIEWED_DATE",
                 "Risk_on_order_qty_D",
                 "Risk_on_order_qty_D1",
@@ -430,7 +448,18 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "Total_Risk_3M",
                 "Total_Risk_4M",
                 "Total_Risk_5M",
-                "Total_Risk_6M"
+                "Total_Risk_6M",
+                "U_EAN",
+                "U_ICP",
+                "QT_Quota_M1",
+                "QT_Quota_M2",
+                "QT_Quota_M3",
+                "QT_Quota_M4",
+                "QT_Quota_M5",
+                "QT_Quota_M6",
+                "QT_Quota_Type",
+                "Phase_In_Item",
+                "DFUs_Strategies"
                 }
     End Function
 
@@ -438,7 +467,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
 
         Select Case DatabaseColName
             Case "First_IntransitIn_Arrival_Date" : Return "CASE WHEN First_IntransitIn_Arrival_Date='1970-01-01' THEN NULL ELSE FORMAT(First_IntransitIn_Arrival_Date,'yyyy-MM-dd') END as First_IntransitIn_Arrival_Date" '"First_IntransitIn_Arrival_Date" '**
-        Case "First_Committed_Date" : Return "CASE WHEN First_Committed_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Committed_Date,'yyyy-MM-dd') END as First_Committed_Date" '"First_Committed_Date" '**
+            Case "First_Committed_Date" : Return "CASE WHEN First_Committed_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Committed_Date,'yyyy-MM-dd') END as First_Committed_Date" '"First_Committed_Date" '**
             Case "First_Recship_Date" : Return "CASE WHEN First_Recship_Date='1970-01-01' THEN NULL ELSE FORMAT(First_Recship_Date,'yyyy-MM-dd') END as First_Recship_Date" '"First_Recship_Date" '**
             Case "GDO_Reviewed" : Return "CASE WHEN GDO_Reviewed='1970-01-01' THEN NULL ELSE FORMAT(GDO_Reviewed,'yyyy-MM-dd') END as GDO_Reviewed" '"GDO_Reviewed" '**
             Case "REVIEWED_DATE" : Return "CASE WHEN REVIEWED_DATE='1970-01-01' THEN NULL ELSE FORMAT(REVIEWED_DATE,'yyyy-MM-dd') END as REVIEWED_DATE" '"REVIEWED_DATE" '**
@@ -471,7 +500,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
             Case "Total_Risk_5M" : Return "Total_Risk_M1 + Total_Risk_M2 + Total_Risk_M3 + Total_Risk_M4 + Total_Risk_M5"
             Case "Total_Risk_6M" : Return "Total_Risk_M1 + Total_Risk_M2 + Total_Risk_M3 + Total_Risk_M4 + Total_Risk_M5 + Total_Risk_M6"
 
-            Case "PRODDATE" : Return "CASE WHEN PRODDATE='1970-01-01' THEN NULL ELSE FORMAT(PRODDATE,'yyyy-MM-dd') END as PRODDATE" '"PRODDATE" '***
+            Case "PRODDATE" : Return "CASE WHEN PRODDATE='1970-01-01' THEN NULL ELSE FORMAT(PRODDATE,'yyyy-MM-dd') END as PRODDATE"
             Case "RiskToReview_Flag" : Return "CASE WHEN RiskToReview_Flag=1 THEN 1 WHEN RiskToReview_Flag IS NULL THEN NULL ELSE 0 END as RiskToReview_Flag"
 
             Case Else : Return """" & DatabaseColName & """"

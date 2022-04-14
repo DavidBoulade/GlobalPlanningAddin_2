@@ -198,8 +198,10 @@ Imports System.Xml
     Private Sub SetReportCreationGroupVisibleState(NewVisibleSw As Boolean)
         If _ReportCreationGroupVisible <> NewVisibleSw Then
             _ReportCreationGroupVisible = NewVisibleSw
-            Globals.ThisRibbon.InvalidateControl("Btn_ReportDate")
-            Globals.ThisRibbon.InvalidateControl("Btn_CreateReport")
+            'Globals.ThisRibbon.InvalidateControl("Btn_ReportDate")
+            'Globals.ThisRibbon.InvalidateControl("Btn_CreateReport")
+            'Globals.ThisRibbon.InvalidateControl("TemplateImage")
+            Globals.ThisRibbon.InvalidateControl("ReportCreation_RibbonGroup")
         End If
     End Sub
 
@@ -473,7 +475,23 @@ Imports System.Xml
     Public Sub Btn_paste_list_Click(control As CustomUI.IRibbonControl)
 
         If My.Computer.Clipboard.ContainsText Then
-            ExcelApplication.ActiveCell.Value = Replace(Replace(My.Computer.Clipboard.GetText(), vbCrLf, ","), vbTab, ",")
+            Dim NewText As String = My.Computer.Clipboard.GetText()
+            NewText = Replace(NewText, vbCrLf, ",")
+            NewText = Replace(NewText, vbTab, ",")
+            NewText = Left(NewText, Len(NewText) - 1)
+            ExcelApplication.ActiveCell.Value = NewText
+        End If
+
+    End Sub
+
+    Public Sub Btn_paste_listWildcard_Click(control As CustomUI.IRibbonControl)
+
+        If My.Computer.Clipboard.ContainsText Then
+            Dim NewText As String = My.Computer.Clipboard.GetText()
+            NewText = Replace(NewText, vbCrLf, "%,%")
+            NewText = Replace(NewText, vbTab, "%,%")
+            NewText = "%" & Left(NewText, Len(NewText) - 2)
+            ExcelApplication.ActiveCell.Value = NewText
         End If
 
     End Sub
