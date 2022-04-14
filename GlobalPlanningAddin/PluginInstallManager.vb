@@ -91,7 +91,10 @@ Public Class PluginInstallManager
                 'and add the plugin
                 Try
                     'Plugin install fails if no workbook is open!!?? so open a new one if none is open
-                    If Globals.ExcelApplication.Workbooks.Count = 0 Then TempWb = Globals.ExcelApplication.Workbooks.Add()
+                    If Globals.ExcelApplication.Workbooks.Count = 0 Then
+                        TempWb = Globals.ExcelApplication.Workbooks.Add()
+                        Thread.Sleep(3000)
+                    End If
 
                     Dim NewInstalledAddin As Microsoft.Office.Interop.Excel.AddIn
                     NewInstalledAddin = Globals.ExcelApplication.AddIns.Add(_InstallPath & Globals.PluginXllInstalledFileName, False)
