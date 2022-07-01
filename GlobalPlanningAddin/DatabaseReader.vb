@@ -35,13 +35,17 @@ Friend Class DatabaseReader : Implements IDisposable
     Private ReadOnly _ReportDate As Date
     Private _ReportAlreadyCreated As Boolean = False
 
-
-    Private _LastDBUpdateDateTime As DateTime = Date.MinValue
+    'Private _LastDBUpdateDateTime As DateTime = Date.MinValue 'Date of the latest changes updated -> but useless as in fact we should keep a lastUpdatedDateTime per field
 
     Private _ReportNbColumns As Integer
 
     Private _ProgressWindow As Form_Progress
 
+    Private _ReportNbRow As Integer
+
+    Public Function HasModifiableColumns() As Boolean
+        Return _DBAdapter.HasModifiableColumns()
+    End Function
 
     Sub New(ReportDate As Date, DatabaseAdapterType As String)
         _ReportDate = ReportDate
@@ -51,10 +55,12 @@ Friend Class DatabaseReader : Implements IDisposable
                 _DBAdapter = New SKUAlertsDatabaseAdapter()
             Case "GRUT_UI"
                 _DBAdapter = New GRUTDatabaseAdapter()
+            Case "GRUT_MARKET_UI"
+                _DBAdapter = New GRUTMarketDatabaseAdapter()
         End Select
 
-        ReDim _Report_Param_Row(0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1) 'Row number of each column in the params worksheet
-        ReDim _Report_ColNumber(0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1)  'Column number in the summary report
+        ReDim _Report_Param_Row(0 To _DBAdapter.SummaryTableColumns.Count - 1) 'Row number of each column in the params worksheet
+        ReDim _Report_ColNumber(0 To _DBAdapter.SummaryTableColumns.Count - 1)  'Column number in the summary report
 
     End Sub
 
@@ -97,7 +103,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
 
 
-        For ColIndex = 0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1
+        For ColIndex = 0 To _DBAdapter.SummaryTableColumns.Count - 1
             _Report_Param_Row(ColIndex) = 0 '0 by default
             _Report_ColNumber(ColIndex) = 0
         Next ColIndex
@@ -108,7 +114,7 @@ Friend Class DatabaseReader : Implements IDisposable
         Do While _Param_ColName_Rng.CellValue_Str(ParamRow) <> ""
 
             FoundSw = False
-            For ColIndex = 0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1
+            For ColIndex = 0 To _DBAdapter.SummaryTableColumns.Count - 1
                 If _Param_ColName_Rng.CellValue_Str(ParamRow) = _DBAdapter.GetColName(ColIndex) Then
                     FoundSw = True
                     _ReportNbColumns += 1
@@ -186,6 +192,9 @@ Friend Class DatabaseReader : Implements IDisposable
 
                 For i = LBound(FilterValues) To UBound(FilterValues)
 
+                    If FilterValues(i) = "{EMPTY}" Then FilterValues(i) = ""
+                    If FilterValues(i) = "!{EMPTY}" Then FilterValues(i) = "!"
+
                     If Left(FilterValues(i), 1) = "!" Then
                         'This value needs to be EXcluded
                         If FilterValues(i).Contains("%") Then
@@ -224,12 +233,12 @@ Friend Class DatabaseReader : Implements IDisposable
                 End If
 
                 If NbValues_Std_Incl > 0 Then
-                    FilterText &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " IN (" & Values_Std_Text_Incl & ")"
+                    FilterText &= "ISNULL(" & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & ",'') IN (" & Values_Std_Text_Incl & ")"
                 End If
 
                 If NbValues_Std_Excl > 0 Then
                     If NbValues_Std_Incl > 0 Then FilterText &= " AND "
-                    FilterText &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " NOT IN (" & Values_Std_Text_Excl & ")"
+                    FilterText &= "ISNULL(" & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & ",'') NOT IN (" & Values_Std_Text_Excl & ")"
                 End If
 
                 If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
@@ -274,7 +283,7 @@ Friend Class DatabaseReader : Implements IDisposable
         ReportSheet.Range(ReportSheet.Columns(1), ReportSheet.Columns(500)).Delete(XlDeleteShiftDirection.xlShiftToLeft)
     End Sub
 
-    Private Sub ApplyReportColumnsSetup(ReportNbRow As Integer)
+    Private Sub ApplyReportColumnsSetup()
 
         'Header text
         ConfigSheet.Range(
@@ -311,7 +320,7 @@ Friend Class DatabaseReader : Implements IDisposable
         If LCase(Left(Globals.ThisWorkbook.Path, 4)) = "http" Then
             'If the template is opened from OneDrive, the copy paste is extremely slow. This is a dirty workarround
             Dim StepSize As Integer = CInt(200000 / _Param_ColName_Rng.NbRows)
-            For FromLine As Integer = 0 To ReportNbRow Step StepSize
+            For FromLine As Integer = 0 To _ReportNbRow Step StepSize
                 ReportSheet.Range(
                     ReportSheet.Cells(REPORT_FIRSTROW + FromLine, 1),
                     ReportSheet.Cells(REPORT_FIRSTROW + FromLine + StepSize - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
@@ -323,24 +332,31 @@ Friend Class DatabaseReader : Implements IDisposable
             'The template is not synchrnoized with OneDrive, paste noramlly in one go
             ReportSheet.Range(
                     ReportSheet.Cells(REPORT_FIRSTROW, 1),
-                    ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
+                    ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteFormats,,, True)
             ReportSheet.Range(
                     ReportSheet.Cells(REPORT_FIRSTROW, 1),
-                    ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
+                    ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Param_ColName_Rng.NbRows)).PasteSpecial(XlPasteType.xlPasteValidation,,, True)
         End If
 
 
     End Sub
 
-    Private Sub CopyDataToReport(ReportNbRow As Integer)
+    Private Sub CopyDataToReport()
 
-        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, 1), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _ReportNbColumns)).Value = ConvertDataTableToArray()
+        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)).Value = ConvertDataTableToArray()
 
         'Make sure the text in cells is not wrapped
-        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, 1), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _ReportNbColumns)).WrapText = False
+        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)).WrapText = False
 
 
     End Sub
+
+    Public ReadOnly Property Report_Range_Incl_Header As Range
+        Get
+            Return ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns))
+        End Get
+    End Property
+
 
     Private Function ConvertDataTableToArray() As Object(,)
         Dim dtTable As System.Data.DataTable = _DBAdapter.SummaryTable_Dataset.Tables(0)
@@ -355,12 +371,12 @@ Friend Class DatabaseReader : Implements IDisposable
         Return myArray
     End Function
 
-    Private Sub AdjustReportColumnsWidth(ReportNbRow As Integer)
+    Private Sub AdjustReportColumnsWidth()
         'Columns Width
-        For ColIndex = 0 To _DBAdapter.Get_SummaryTable_Columns.Count - 1
+        For ColIndex = 0 To _DBAdapter.SummaryTableColumns.Count - 1
             'Column
             If _Report_ColNumber(ColIndex) > 0 Then
-                With ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex)))
+                With ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Report_ColNumber(ColIndex)))
                     .ColumnWidth = _Param_ColWidth_Rng.CellValue_Int(_Report_ColNumber(ColIndex))
                 End With
 
@@ -420,17 +436,17 @@ Friend Class DatabaseReader : Implements IDisposable
         ReportSheet.Outline.ShowLevels(ColumnLevels:=1)
     End Sub
 
-    Private Sub Add_SummaryReport_FilterAndSort(ReportNbRow As Integer)
+    Private Sub Add_SummaryReport_FilterAndSort()
 
         'Add autofilter *******************************************
-        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _ReportNbColumns)).AutoFilter(Field:=1) 'Field:=Report_Col_xxx, Criteria1:="=X"
+        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)).AutoFilter(Field:=1) 'Field:=Report_Col_xxx, Criteria1:="=X"
 
         'Sort the report **********************************
         For i As Integer = 0 To _DBAdapter.Get_SummaryTable_DefaultSortColumns.Count - 1
             Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.Get_SummaryTable_DefaultSortColumns(i))
             If _Report_ColNumber(ColIndex) > 0 Then 'is this column mapped in the report? if yes sort by it
                 ReportSheet.AutoFilter.Sort.SortFields.Clear()
-                ReportSheet.AutoFilter.Sort.SortFields.Add(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _Report_ColNumber(ColIndex))), XlSortOn.xlSortOnValues, XlSortOrder.xlDescending, XlSortDataOption.xlSortNormal)
+                ReportSheet.AutoFilter.Sort.SortFields.Add(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Report_ColNumber(ColIndex))), XlSortOn.xlSortOnValues, XlSortOrder.xlDescending, XlSortDataOption.xlSortNormal)
                 With ReportSheet.AutoFilter.Sort
                     .Header = XlYesNoGuess.xlYes
                     .MatchCase = False
@@ -473,7 +489,6 @@ Friend Class DatabaseReader : Implements IDisposable
     End Sub
 
     Public Function CreateReport() As Boolean
-        Dim ReportNbRow As Integer
         Dim ReportFrozenColumnsCount As Integer
         Dim ReportFrozenRowsCount As Integer
 
@@ -505,8 +520,8 @@ Friend Class DatabaseReader : Implements IDisposable
             'check if the key columns are mapped
             Dim AllKeysAreMapped As Boolean = True
             Dim MissingKeyColumnName As String = ""
-            For i As Integer = 0 To _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1
-                Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.Get_SummaryTable_KeyColumns(i))
+            For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
+                Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.SummaryTable_KeyColumns(i).ColumnName)
                 If _Report_ColNumber(ColIndex) = 0 Then
                     AllKeysAreMapped = False
                     MissingKeyColumnName = _DBAdapter.GetColName(ColIndex)
@@ -525,10 +540,10 @@ Friend Class DatabaseReader : Implements IDisposable
 
             _ProgressWindow.SetProgress(10, "Reading data")
 
-            ReportNbRow = _DBAdapter.Read_SummaryTable_Data(_ReportDate) 'Read data from database
+            _ReportNbRow = _DBAdapter.Read_SummaryTable_Data(_ReportDate) 'Read data from database
 
             'stop if no data returned
-            If ReportNbRow = 0 Then
+            If _ReportNbRow = 0 Then
                 Globals.ThisWorkbook.Application.ScreenUpdating = True
                 _LastMessage = "No data returned"
                 CloseProgressWindow()
@@ -540,23 +555,23 @@ Friend Class DatabaseReader : Implements IDisposable
             CleanReportWorksheet() 'Delete everything from the report worksheet
 
             _ProgressWindow.SetProgress(70, "Formatting columns")
-            ApplyReportColumnsSetup(ReportNbRow) 'Setup the columns
+            ApplyReportColumnsSetup() 'Setup the columns
 
             _ProgressWindow.SetProgress(75, "Copying new data")
-            CopyDataToReport(ReportNbRow) 'Copy the data to the report worksheet
+            CopyDataToReport() 'Copy the data to the report worksheet
 
             _ProgressWindow.SetProgress(80, "Adjusting columns width")
-            AdjustReportColumnsWidth(ReportNbRow) 'Columns Width
+            AdjustReportColumnsWidth() 'Columns Width
 
             _ProgressWindow.SetProgress(85, "Adding column groups")
             ApplyReportColumnsGrouping() 'Columns Groupping
 
             _ProgressWindow.SetProgress(90, "Drawing borders")
             'Draw borders
-            DrawAllBorders(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + ReportNbRow - 1, _ReportNbColumns)))
+            DrawAllBorders(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)))
 
             _ProgressWindow.SetProgress(95, "Adding filter and sort")
-            Add_SummaryReport_FilterAndSort(ReportNbRow) 'Add autofilter and sort the report
+            Add_SummaryReport_FilterAndSort() 'Add autofilter and sort the report
             WorksheetFreezePanes(ReportSheet, ReportFrozenColumnsCount, ReportFrozenRowsCount) 'Freeze panes (this also activates the report sheet)
 
             _ProgressWindow.SetProgress(100, "OK")
@@ -598,7 +613,7 @@ Friend Class DatabaseReader : Implements IDisposable
         Dim NewNumericValue As Nullable(Of Double)
         Dim OldStringValue As String
         Dim NewStringValue As String
-        Dim KeyValues(_DBAdapter.Get_SummaryTable_KeyColumns.Count - 1) As String
+        Dim KeyValues(_DBAdapter.SummaryTable_KeyColumns.Count - 1) As String
         Dim KeyValuesConcatStr As String = ""
 
         'Check that the report was created first...
@@ -608,9 +623,9 @@ Friend Class DatabaseReader : Implements IDisposable
         End If
 
         'check that the key columns are still mapped correctly
-        For Each KeyColumn As String In _DBAdapter.Get_SummaryTable_KeyColumns
+        For Each KeyColumn As DatabaseAdapterColumn In _DBAdapter.SummaryTable_KeyColumns
 
-            Dim KeyColumnIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(KeyColumn)
+            Dim KeyColumnIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(KeyColumn.ColumnName)
             ParamRow = _Report_Param_Row(KeyColumnIndex)
             If CellValue_Str(ReportSheet, REPORT_FIRSTROW - 1, _Report_ColNumber(KeyColumnIndex)) <> CellValue_Str(ConfigSheet, ParamRow, PARAMS_COL_HEADERTEXT) Then
                 MsgBox("Error: Columns have been modified. Column " & _Report_ColNumber(KeyColumnIndex) & " should be '" & CellValue_Str(ConfigSheet, ParamRow, PARAMS_COL_HEADERTEXT) & "'.", MsgBoxStyle.Critical, "Global planning Addin")
@@ -620,8 +635,8 @@ Friend Class DatabaseReader : Implements IDisposable
         Next
 
         'check that the modifiable columns are still mapped correctly
-        For Each ModifiableColumnName As String In _DBAdapter.Get_SummaryTable_ListOfModifiableColumns()
-            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(ModifiableColumnName)
+        For Each ModifiableColumn As DatabaseAdapterColumn In _DBAdapter.SummaryTable_ModifiableColumns
+            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(ModifiableColumn.ColumnName)
             ParamRow = _Report_Param_Row(ColIndex)
             If ParamRow <> 0 Then 'if the row is listed for display
                 AtLeastOneModifiableCol = True
@@ -649,22 +664,22 @@ Friend Class DatabaseReader : Implements IDisposable
         'Make a copy of the data in the Key & modifiable columns
         Dim ColumnsSnapshot As New List(Of ExcelRangeArray)
 
-        For Each KeyColumn As String In _DBAdapter.Get_SummaryTable_KeyColumns
+        For Each KeyColumn As DatabaseAdapterColumn In _DBAdapter.SummaryTable_KeyColumns
 
-            Dim KeyColumnIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(KeyColumn)
-            ColumnsSnapshot.Add(New ExcelRangeArray(KeyColumn,
+            Dim KeyColumnIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(KeyColumn.ColumnName)
+            ColumnsSnapshot.Add(New ExcelRangeArray(KeyColumn.ColumnName,
                                                      ReportSheet.Range(
                                                             ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(KeyColumnIndex)),
                                                             ReportSheet.Cells(ReportSheet.UsedRange.Rows.End(XlDirection.xlDown).Row, _Report_ColNumber(KeyColumnIndex))
                                                                 )))
         Next
 
-        For Each ColumnName As String In _DBAdapter.Get_SummaryTable_ListOfModifiableColumns
-            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(ColumnName)
+        For Each ModifiableColumn As DatabaseAdapterColumn In _DBAdapter.SummaryTable_ModifiableColumns
+            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(ModifiableColumn.ColumnName)
             ParamRow = _Report_Param_Row(ColIndex)
             If ParamRow <> 0 Then 'if the row is listed for display
 
-                ColumnsSnapshot.Add(New ExcelRangeArray(ColumnName, ReportSheet.Range(
+                ColumnsSnapshot.Add(New ExcelRangeArray(ModifiableColumn.ColumnName, ReportSheet.Range(
                                                         ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)),
                                                         ReportSheet.Cells(ReportSheet.UsedRange.Rows.End(XlDirection.xlDown).Row, _Report_ColNumber(ColIndex))
                                                             )))
@@ -672,9 +687,9 @@ Friend Class DatabaseReader : Implements IDisposable
         Next
 
         'Create a table to keep a reference to the key columns snapshots
-        Dim KeyCol_Snapshot(_DBAdapter.Get_SummaryTable_KeyColumns.Count - 1) As ExcelRangeArray
-        For i As Integer = 0 To _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1
-            Dim ColName = _DBAdapter.Get_SummaryTable_KeyColumns(i)
+        Dim KeyCol_Snapshot(_DBAdapter.SummaryTable_KeyColumns.Count - 1) As ExcelRangeArray
+        For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
+            Dim ColName = _DBAdapter.SummaryTable_KeyColumns(i).ColumnName
             KeyCol_Snapshot(i) = ColumnsSnapshot.Find(Function(c) c.ColumnName = ColName)
         Next
 
@@ -682,17 +697,17 @@ Friend Class DatabaseReader : Implements IDisposable
         CurRowNum = 1 'Start from row 1
 
         'Copy the values of the keys for the first row
-        For i As Integer = 0 To _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1
+        For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
             KeyValues(i) = KeyCol_Snapshot(i).CellValue_Str(CurRowNum)
             KeyValuesConcatStr &= KeyValues(i)
-            If i < _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
+            If i < _DBAdapter.SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
         Next i
 
         'Create a table that says for each modifiable column if it is displayed, so we don't have to check for each row
-        Dim NbModifiableColumns As Integer = _DBAdapter.Get_SummaryTable_ListOfModifiableColumns.Count
+        Dim NbModifiableColumns As Integer = _DBAdapter.SummaryTable_ModifiableColumns.Count
         Dim IsModifiableColumnMapped(0 To NbModifiableColumns - 1) As Boolean
         For i = 0 To NbModifiableColumns - 1
-            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.Get_SummaryTable_ListOfModifiableColumns(i))
+            ColIndex = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.SummaryTable_ModifiableColumns(i).ColumnName)
             CurColNum = _Report_ColNumber(ColIndex)
 
             If CurColNum <> 0 Then
@@ -711,7 +726,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
                 For i = 0 To NbModifiableColumns - 1
 
-                    Dim ModifiableColumnName As String = _DBAdapter.Get_SummaryTable_ListOfModifiableColumns(i)
+                    Dim ModifiableColumnName As String = _DBAdapter.SummaryTable_ModifiableColumns(i).ColumnName
 
                     If IsModifiableColumnMapped(i) Then
 
@@ -801,10 +816,10 @@ Friend Class DatabaseReader : Implements IDisposable
             If CurRowNum > KeyCol_Snapshot(0).NbRows Then Exit Do
             'Copy the values of the keys for the new row
             KeyValuesConcatStr = ""
-            For i As Integer = 0 To _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1
+            For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
                 KeyValues(i) = KeyCol_Snapshot(i).CellValue_Str(CurRowNum)
                 KeyValuesConcatStr &= KeyValues(i)
-                If i < _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
+                If i < _DBAdapter.SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
             Next i
         Loop
 
@@ -833,10 +848,10 @@ Friend Class DatabaseReader : Implements IDisposable
                 'All ok, now send the data to the database
                 _ProgressWindow.SetProgress(33, "Sending modifications to database")
 
-                _LastDBUpdateDateTime = Now
-                _LastDBUpdateDateTime = New DateTime(_LastDBUpdateDateTime.Year, _LastDBUpdateDateTime.Month, _LastDBUpdateDateTime.Day, _LastDBUpdateDateTime.Hour, _LastDBUpdateDateTime.Minute, _LastDBUpdateDateTime.Second, _LastDBUpdateDateTime.Kind)
+                Dim UpdateDateTime As DateTime = Now
+                UpdateDateTime = New DateTime(UpdateDateTime.Year, UpdateDateTime.Month, UpdateDateTime.Day, UpdateDateTime.Hour, UpdateDateTime.Minute, UpdateDateTime.Second, UpdateDateTime.Kind)
 
-                Dim NbChangesProcessed As Integer = _DBAdapter.SendChangesToDB(_LastDBUpdateDateTime, _ReportDate, Environment.UserName, AddressOf UpdateProgress)
+                Dim NbChangesProcessed As Integer = _DBAdapter.SendChangesToDB(UpdateDateTime, _ReportDate, Environment.UserName, AddressOf UpdateProgress)
                 If NbChangesProcessed > 0 Then MsgBox(NbChangesProcessed.ToString & " change" & CStr(IIf(NbChangesProcessed > 1, "s", "")) & " " & CStr(IIf(NbChangesProcessed > 1, "have", "has")) & " been sent successfully to the database", MsgBoxStyle.Information, "Global planning Addin")
 
                 For Each AbandonnedConflict As SummaryTable_ValueModification In _DBAdapter.AbandonnedConflictsModifications
@@ -860,14 +875,14 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Public Function Is_SummaryWorksheetColumn_Modifiable(ReportColumn As Integer) As Boolean 'Check if the given Worksheet column is modifiable
         If ReportColumn > _ReportNbColumns Or ReportColumn < 1 Then Return False
-        Dim ColumnName As String = _DBAdapter.Get_SummaryTable_Columns(GetReportColIndex(ReportColumn))
-        Return _DBAdapter.Get_SummaryTable_ListOfModifiableColumns.Contains(ColumnName)
+        Dim ColumnName As String = _DBAdapter.SummaryTableColumns(GetReportColIndex(ReportColumn)).ColumnName
+        Return _DBAdapter.SummaryTable_ModifiableColumns.Find(Function(x) x.ColumnName = ColumnName) IsNot Nothing '(ReportColumn).Contains(ColumnName)
     End Function
     Public Function GetKeyValues_For_SummaryReportRow(ReportRow As Integer, ReportSheet As Worksheet) As String()
 
-        Dim KeyValues(_DBAdapter.Get_SummaryTable_KeyColumns.Count - 1) As String
-        For i As Integer = 0 To _DBAdapter.Get_SummaryTable_KeyColumns.Count - 1
-            Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.Get_SummaryTable_KeyColumns(i))
+        Dim KeyValues(_DBAdapter.SummaryTable_KeyColumns.Count - 1) As String
+        For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
+            Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.SummaryTable_KeyColumns(i).ColumnName)
             KeyValues(i) = CStr(CType(ReportSheet.Cells(ReportRow, _Report_ColNumber(ColIndex)), Microsoft.Office.Interop.Excel.Range).Value)
         Next
         Return KeyValues
@@ -876,7 +891,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Public Function Get_ChangeLog(ReportRow As Integer, ReportColumn As Integer, ReportSheet As Worksheet) As DataSet
 
-        If _DBAdapter.Read_ChangeLog(_ReportDate, GetKeyValues_For_SummaryReportRow(ReportRow, ReportSheet), _DBAdapter.Get_SummaryTable_Columns(GetReportColIndex(ReportColumn))) = True Then
+        If _DBAdapter.Read_ChangeLog(GetKeyValues_For_SummaryReportRow(ReportRow, ReportSheet), _DBAdapter.SummaryTableColumns(GetReportColIndex(ReportColumn)).ColumnName) = True Then
             Return _DBAdapter.ChangeLog_Dataset
         Else
             Return Nothing
@@ -908,7 +923,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
         _ProgressWindow.SetProgress(80, "Applying filters")
 
-        Add_DetailedProjectionReport_AutoFilter(NbRows, KeyValues)
+        Add_DetailedProjectionReport_AutoFilter(KeyValues)
 
         _ProgressWindow.SetProgress(100, "Done")
 
@@ -918,7 +933,7 @@ Friend Class DatabaseReader : Implements IDisposable
         Return True
     End Function
 
-    Private Sub Add_DetailedProjectionReport_AutoFilter(ReportNbRow As Integer, KeyValues() As String)
+    Private Sub Add_DetailedProjectionReport_AutoFilter(KeyValues() As String)
         Dim ColumnFilters As List(Of DatabaseAdapterBase.ColumnFilter)
         ColumnFilters = _DBAdapter.Get_DetailledView_ColumnFilter(KeyValues)
 
@@ -927,13 +942,13 @@ Friend Class DatabaseReader : Implements IDisposable
             Case 0
                 DetailsSheet.Range(
                     DetailsSheet.Cells(DETAILS_FIRSTROW - 1, 1),
-                    DetailsSheet.Cells(DETAILS_FIRSTROW + ReportNbRow - 1, _DBAdapter.Get_DetailedView_Columns.Count)
+                    DetailsSheet.Cells(DETAILS_FIRSTROW + _ReportNbRow - 1, _DBAdapter.Get_DetailedView_Columns.Count)
                     ).AutoFilter(Field:=1)
             Case Else
                 For i As Integer = 0 To ColumnFilters.Count - 1
                     DetailsSheet.Range(
                         DetailsSheet.Cells(DETAILS_FIRSTROW - 1, 1),
-                        DetailsSheet.Cells(DETAILS_FIRSTROW + ReportNbRow - 1, _DBAdapter.Get_DetailedView_Columns.Count)
+                        DetailsSheet.Cells(DETAILS_FIRSTROW + _ReportNbRow - 1, _DBAdapter.Get_DetailedView_Columns.Count)
                         ).AutoFilter(Field:=ColumnFilters(i).ColumnNumber, Criteria1:=ColumnFilters(i).FilterValue)
                 Next
 
@@ -1055,6 +1070,68 @@ Friend Class DatabaseReader : Implements IDisposable
         Return TempList
 
     End Function
+
+    Public Sub GroupBySKULevel()
+
+        Dim RangeRowNo As Integer
+        Dim CurrentLevel As Integer
+
+        ReportSheet.Outline.SummaryRow = XlSummaryRow.xlSummaryAbove 'shows the group + on the top line
+
+
+        Dim SKULevelColNum As Integer = _Report_ColNumber(_DBAdapter.GetColIndexFromDatabaseName("SKU_Level"))
+
+        Dim SKULevel_Rng = New ExcelRangeArray("SKU_Level",
+                                                   ReportSheet.Range(
+                                                        ReportSheet.Cells(REPORT_FIRSTROW, SKULevelColNum),
+                                                        ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, SKULevelColNum)))
+
+        For CurrentLevel = 3 To 1 Step -1
+
+            RangeRowNo = 1
+            Dim FirstGroupRow As Integer
+            Dim InAGroup As Boolean = False
+            Do
+
+                If SKULevel_Rng.CellValue_Int(RangeRowNo) = CurrentLevel And Not InAGroup Then
+
+                    FirstGroupRow = RangeRowNo
+                    InAGroup = True
+
+                ElseIf SKULevel_Rng.CellValue_Int(RangeRowNo) < CurrentLevel And InAGroup Then
+
+                    Dim FirstReportRowNo = FirstGroupRow + REPORT_FIRSTROW - 1
+                    Dim LastReportRowNo = RangeRowNo - 1 + REPORT_FIRSTROW - 1
+                    ReportSheet.Range(ReportSheet.Rows(FirstReportRowNo), ReportSheet.Rows(LastReportRowNo)).Rows.Group()
+                    InAGroup = False
+
+                End If
+
+                RangeRowNo += 1
+                If RangeRowNo > SKULevel_Rng.NbRows Then Exit Do
+            Loop
+            If InAGroup Then
+                Dim FirstReportRowNo = FirstGroupRow + REPORT_FIRSTROW - 1
+                Dim LastReportRowNo = RangeRowNo - 1 + REPORT_FIRSTROW - 1
+                ReportSheet.Range(ReportSheet.Rows(FirstReportRowNo), ReportSheet.Rows(LastReportRowNo)).Rows.Group()
+            End If
+        Next
+
+        RangeRowNo = 1
+        Dim ReportRowNo As Integer
+        Do
+
+            CurrentLevel = SKULevel_Rng.CellValue_Int(RangeRowNo)
+            ReportRowNo = RangeRowNo + REPORT_FIRSTROW - 1
+
+            ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, 31)).Interior.Color = HslToRgba(148 / 255, 150 / 255, (114 + CurrentLevel * 40) / 255)
+            If CurrentLevel = 0 Then ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, 31)).Font.Color = System.Drawing.Color.White
+
+            RangeRowNo += 1
+            If RangeRowNo > SKULevel_Rng.NbRows Then Exit Do
+        Loop
+
+    End Sub
 
 
 #Region "IDisposable Support"
@@ -1179,6 +1256,36 @@ Module DatabaseReaderUtils
     '    End If
     'End Function
 
+    Public Function HslToRgba(h As Double, s As Double, l As Double) As System.Drawing.Color
+        Dim r, g, b As Double
+
+        If h > 1 Then h = 1
+        If s > 1 Then s = 1
+        If l > 1 Then l = 1
+
+        If s = 0 Then
+            r = l
+            g = l
+            b = l
+        Else
+            Dim q As Double = If(l < 0.5, l * (1 + s), l + s - l * s)
+            Dim p As Double = 2 * l - q
+            r = HueToRgb(p, q, h + 1 / 3)
+            g = HueToRgb(p, q, h)
+            b = HueToRgb(p, q, h - 1 / 3)
+        End If
+
+        Return System.Drawing.Color.FromArgb(CInt((r * 255)), CInt((g * 255)), CInt((b * 255)))
+    End Function
+
+    Private Function HueToRgb(ByVal p As Double, ByVal q As Double, ByVal t As Double) As Double
+        If t < 0 Then t += 1
+        If t > 1 Then t -= 1
+        If t < 1 / 6 Then Return p + (q - p) * 6 * t
+        If t < 1 / 2 Then Return q
+        If t < 2 / 3 Then Return p + (q - p) * (2 / 3 - t) * 6
+        Return p
+    End Function
 
 End Module
 

@@ -4,7 +4,7 @@
     Public Property RememberChoice As Boolean
 
 
-    Sub New(KeyValues() As String, FieldName As String, UserChanges As String, OtherChanges As String)
+    Sub New(KeyValues() As String, FieldName As String, UserChanges As String, OtherChanges_DataSet As DataSet)
         InitializeComponent() ' Cet appel est requis par le concepteur.
 
         Dim KeyValuesConcatStr As String = ""
@@ -16,7 +16,11 @@
         TextBox_SKU.Text = KeyValuesConcatStr
         TextBox_Field.Text = FieldName
         RichTextBox_UserModification.Text = UserChanges
-        RichTextBox_OtherChanges.Text = OtherChanges
+
+        DataGridView_OtherChanges.Columns.Clear()
+        DataGridView_OtherChanges.DataSource = OtherChanges_DataSet.Tables(0)
+        DataGridView_OtherChanges.ColumnHeadersVisible = True
+
         _RememberChoice = False
     End Sub
     Private Sub Button_Overwrite_Click(sender As Object, e As EventArgs) Handles Button_Overwrite.Click

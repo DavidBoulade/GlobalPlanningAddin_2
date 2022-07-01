@@ -7,9 +7,28 @@ Imports System.Threading.Tasks
 Imports System.Data
 
 Public Class SKUAlertsDatabaseAdapter : Inherits DatabaseAdapterBase
+    Public Sub New()
+        'Populate lists of specific columns
+        SummaryTable_KeyColumns = _SummaryTableColumns.FindAll(Function(x) x.IsKey = True)
+        SummaryTable_ModifiableColumns = _SummaryTableColumns.FindAll(Function(x) x.IsModifiable = True)
+    End Sub
+
+    Public Overrides ReadOnly Property SummaryTable_KeyColumns As List(Of DatabaseAdapterColumn)
+    Public Overrides ReadOnly Property SummaryTable_ModifiableColumns As List(Of DatabaseAdapterColumn)
 
     Protected Overrides Function Get_ConnectionString() As String
-        Return "Server=USSANTDB02P\NA_SUPPLY_CHAIN;Database=SKUAlerts;UID=GlobalPlanningAddinUser;PWD=iojrgRGRE**$8421;"
+        Dim ConnectionString_Production As String = "Server=USSANTDB02P\NA_SUPPLY_CHAIN;Database=SKUAlerts;UID=GlobalPlanningAddinUser;PWD=iojrgRGRE**$8421;"
+        Dim ConnectionString_Test As String = "Server=USSANTDB01T\NA_SUPPLY_CHAIN;Database=SKUAlerts;UID=GlobalPlanningAddinUser;PWD=iojrgRGRE**$8421;"
+
+        Select Case Globals.Current_Plugin_System.ID
+            Case 0
+                Return ConnectionString_Production
+            Case 1
+                Return ConnectionString_Test
+            Case Else
+                Return ConnectionString_Production
+        End Select
+
     End Function
 
     Protected Overrides Function Get_DatabaseSchema() As String
@@ -32,163 +51,113 @@ Public Class SKUAlertsDatabaseAdapter : Inherits DatabaseAdapterBase
         Return "ORDER BY SortIdAVST ASC"
     End Function
 
-    Public Overrides Function Get_SummaryTable_ListOfModifiableColumns() As String()
-        Return {
-                "ExcessActionned", 'char(1)
-                "ExcessRootCause1", 'dropdown list of string
-                "ExcessRootCause2", 'dropdownlist of string
-                "ExcessComment", 'free string
-                "UserDefined1", 'free string
-                "UserDefined2", 'free string
-                "UserDefined3", 'free string
-                "UserDefined4", 'free string
-                "UserDefined5", 'free string
-                "UserDefined6", 'free string
-                "UserDefined7", 'free string
-                "UserDefined8", 'free string
-                "UserDefined9", 'free string
-                "UserDefined10", 'free string
-                "FirstDeliveryDate", 'date
-                "FirstDeliveryQty", 'double
-                "ServiceRootCause1", 'dropdown list of string
-                "ServiceRootCause2", 'dropdown list of string
-                "ServiceComment" 'free string
-                }
-    End Function
+    Private ReadOnly _SummaryTableColumns As New List(Of DatabaseAdapterColumn)( 'the order of the key columns should match the order of the columns in the XXX_UPDATE table in SQL server as the BulkCopy fails if columns are not in the right order
+        {
+        New DatabaseAdapterColumn("Material", True, False, "", ""),
+        New DatabaseAdapterColumn("Plant", True, False, "", ""),
+        New DatabaseAdapterColumn("MaterialDescr", False, False, "", ""),
+        New DatabaseAdapterColumn("MRPC", False, False, "", ""),
+        New DatabaseAdapterColumn("MatType", False, False, "", ""),
+        New DatabaseAdapterColumn("ABC", False, False, "", ""),
+        New DatabaseAdapterColumn("LCS", False, False, "", ""),
+        New DatabaseAdapterColumn("StdPrice", False, False, "", ""),
+        New DatabaseAdapterColumn("PriceBase", False, False, "", ""),
+        New DatabaseAdapterColumn("PurchGroup", False, False, "", ""),
+        New DatabaseAdapterColumn("PTF", False, False, "", ""),
+        New DatabaseAdapterColumn("LotSize", False, False, "", ""),
+        New DatabaseAdapterColumn("MinLotSizeMM", False, False, "", ""),
+        New DatabaseAdapterColumn("RoundingValue", False, False, "", ""),
+        New DatabaseAdapterColumn("UOM", False, False, "", ""),
+        New DatabaseAdapterColumn("PDT", False, False, "", ""),
+        New DatabaseAdapterColumn("GRPT", False, False, "", ""),
+        New DatabaseAdapterColumn("FirstOOSDate", False, False, "", "CASE WHEN FirstOOSDate='1900-01-01' THEN '' ELSE FORMAT(FirstOOSDate,'yyyy-MM-dd') END as FirstOOSDate"),
+        New DatabaseAdapterColumn("MissedQtyPDT", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW1", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW2", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW3", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW4", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW5", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyW6+", False, False, "", ""),
+        New DatabaseAdapterColumn("MissingSafetyPDT", False, False, "", ""),
+        New DatabaseAdapterColumn("MissingSafetyQtyPDT", False, False, "", ""),
+        New DatabaseAdapterColumn("MissingSafetyTimePDT", False, False, "", ""),
+        New DatabaseAdapterColumn("MissingGRPTPDT", False, False, "", ""),
+        New DatabaseAdapterColumn("FirstDeliveryDate", False, True, "DATE", "CASE WHEN FirstDeliveryDate='1900-01-01' THEN '' ELSE FORMAT(FirstDeliveryDate,'yyyy-MM-dd') END as FirstDeliveryDate"),
+        New DatabaseAdapterColumn("FirstDeliveryQty", False, True, "NUMERIC", ""),
+        New DatabaseAdapterColumn("RecoveryDate", False, False, "", "CASE WHEN RecoveryDate='1900-01-01' THEN '' ELSE FORMAT(RecoveryDate,'yyyy-MM-dd') END as RecoveryDate"),
+        New DatabaseAdapterColumn("ServiceRootCause1", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("ServiceRootCause2", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("ServiceComment", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("SKU", False, False, "", "Material+'@'+Plant AS SKU"),
+        New DatabaseAdapterColumn("OOSParents", False, False, "", ""),
+        New DatabaseAdapterColumn("OOSParentsMRPC", False, False, "", ""),
+        New DatabaseAdapterColumn("ActiveVendorCodes", False, False, "", ""),
+        New DatabaseAdapterColumn("ActiveVendorNames", False, False, "", ""),
+        New DatabaseAdapterColumn("MRPType", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyPDT+", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedValPDT", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedValPDT+", False, False, "", ""),
+        New DatabaseAdapterColumn("ServiceRisk", False, False, "", ""),
+        New DatabaseAdapterColumn("UltimateOOSParents", False, False, "", ""),
+        New DatabaseAdapterColumn("UltimateOOSParentsMRPC", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedQtyTotal", False, False, "", ""),
+        New DatabaseAdapterColumn("MissedValTotal", False, False, "", ""),
+        New DatabaseAdapterColumn("ServiceAlert", False, False, "", ""),
+        New DatabaseAdapterColumn("SourceListFixVendor", False, False, "", ""),
+        New DatabaseAdapterColumn("UserDefined1", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined2", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined3", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined4", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined5", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined6", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined7", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined8", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined9", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("UserDefined10", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("MRPCDescription", False, False, "", ""),
+        New DatabaseAdapterColumn("House", False, False, "", ""),
+        New DatabaseAdapterColumn("Brand", False, False, "", ""),
+        New DatabaseAdapterColumn("Line", False, False, "", ""),
+        New DatabaseAdapterColumn("Currency", False, False, "", ""),
+        New DatabaseAdapterColumn("USDollarExchangeRate", False, False, "", ""),
+        New DatabaseAdapterColumn("PlanningCal", False, False, "", ""),
+        New DatabaseAdapterColumn("MinlotsizeVal", False, False, "", "(MinLotSizeMM * StdPrice * USDollarExchangeRate / NULLIF(PriceBase,0)) AS MinlotsizeVal"),
+        New DatabaseAdapterColumn("SafetyTimeInd", False, False, "", ""),
+        New DatabaseAdapterColumn("SafetyTime", False, False, "", ""),
+        New DatabaseAdapterColumn("CompanyCode", False, False, "", ""),
+        New DatabaseAdapterColumn("ProductHierarchy", False, False, "", ""),
+        New DatabaseAdapterColumn("EAN", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjTooEarlyAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjTooMuchAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("AverageTooEarlyNbDays", False, False, "", ""),
+        New DatabaseAdapterColumn("SumTooMuchValues", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUInvTooEarlyAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUInvTooMuchAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUInvExcessAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUInventoryAreaVal", False, False, "", ""),
+        New DatabaseAdapterColumn("ExcessAlert", False, False, "", ""),
+        New DatabaseAdapterColumn("ExcessAlertCreationDate", False, False, "", "CASE WHEN ExcessAlertCreationDate='1900-01-01' THEN '' ELSE FORMAT(ExcessAlertCreationDate,'yyyy-MM-dd') END as ExcessAlertCreationDate"),
+        New DatabaseAdapterColumn("NbDaysCurrentExcessAlert", False, False, "", ""),
+        New DatabaseAdapterColumn("ExcessActionned", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("ExcessRootCause1", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("ExcessRootCause2", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("ExcessComment", False, True, "STRING", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaValM1", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaValM2", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaValM3", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaValM4", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaValM5", False, False, "", ""),
+        New DatabaseAdapterColumn("SKUProjExcessAreaValM6", False, False, "", "")
+        })
 
-    'List all the modifiable columns with numeric type
-    Public Overrides Function Get_SummaryTable_ListOfNumericColumns() As String()
-        Return {
-                "FirstDeliveryQty" 'double
-                }
-    End Function
+    Public Overrides ReadOnly Property SummaryTableColumns As List(Of DatabaseAdapterColumn)
+        Get
+            Return _SummaryTableColumns
+        End Get
+    End Property
 
-    'List all modifiable columns with Date type
-    Public Overrides Function Get_SummaryTable_ListOfDateColumns() As String()
-        Return {
-                "FirstDeliveryDate" 'date
-                }
-    End Function
-
-    Public Overrides Function Get_SummaryTable_KeyColumns() As String() 'Key columns (excluding the ReportDate that must be key as well). These columns should also be Keys in the detailed table
-        Return { 'the order should match the order of the columns in the XXX_UPDATE table in SQL server as the BulkCopy fails if columns are not in the right order
-            "Material",
-            "Plant"}
-    End Function
-
-    Public Overrides Function Get_SummaryTable_Columns() As String()
-        Return {
-                "Plant",
-                "Material",
-                "MaterialDescr",
-                "MRPC",
-                "MatType",
-                "ABC",
-                "LCS",
-                "StdPrice",
-                "PriceBase",
-                "PurchGroup",
-                "PTF",
-                "LotSize",
-                "MinLotSizeMM",
-                "RoundingValue",
-                "UOM",
-                "PDT",
-                "GRPT",
-                "FirstOOSDate",
-                "MissedQtyPDT",
-                "MissedQtyW",
-                "MissedQtyW1",
-                "MissedQtyW2",
-                "MissedQtyW3",
-                "MissedQtyW4",
-                "MissedQtyW5",
-                "MissedQtyW6+",
-                "MissingSafetyPDT",
-                "MissingSafetyQtyPDT",
-                "MissingSafetyTimePDT",
-                "MissingGRPTPDT",
-                "FirstDeliveryDate",
-                "FirstDeliveryQty",
-                "RecoveryDate",
-                "ServiceRootCause1",
-                "ServiceRootCause2",
-                "ServiceComment",
-                "SKU",
-                "OOSParents",
-                "OOSParentsMRPC",
-                "ActiveVendorCodes",
-                "ActiveVendorNames",
-                "MRPType",
-                "MissedQtyPDT+",
-                "MissedValPDT",
-                "MissedValPDT+",
-                "ServiceRisk",
-                "UltimateOOSParents",
-                "UltimateOOSParentsMRPC",
-                "MissedQtyTotal",
-                "MissedValTotal",
-                "ServiceAlert",
-                "SourceListFixVendor",
-                "UserDefined1",
-                "UserDefined2",
-                "UserDefined3",
-                "UserDefined4",
-                "UserDefined5",
-                "UserDefined6",
-                "UserDefined7",
-                "UserDefined8",
-                "UserDefined9",
-                "UserDefined10",
-                "MRPCDescription",
-                "House",
-                "Brand",
-                "Line",
-                "Currency",
-                "USDollarExchangeRate",
-                "PlanningCal",
-                "MinlotsizeVal",
-                "SafetyTimeInd",
-                "SafetyTime",
-                "CompanyCode",
-                "ProductHierarchy",
-                "EAN",
-                "SKUProjTooEarlyAreaVal",
-                "SKUProjTooMuchAreaVal",
-                "AverageTooEarlyNbDays",
-                "SumTooMuchValues",
-                "SKUProjExcessAreaVal",
-                "SKUInvTooEarlyAreaVal",
-                "SKUInvTooMuchAreaVal",
-                "SKUInvExcessAreaVal",
-                "SKUInventoryAreaVal",
-                "ExcessAlert",
-                "ExcessAlertCreationDate",
-                "NbDaysCurrentExcessAlert",
-                "ExcessActionned",
-                "ExcessRootCause1",
-                "ExcessRootCause2",
-                "ExcessComment",
-                "SKUProjExcessAreaValM1",
-                "SKUProjExcessAreaValM2",
-                "SKUProjExcessAreaValM3",
-                "SKUProjExcessAreaValM4",
-                "SKUProjExcessAreaValM5",
-                "SKUProjExcessAreaValM6"
-                }
-    End Function
-    Public Overrides Function Get_SummaryTable_SQLQueryForField(DatabaseColName As String) As String
-
-        Select Case DatabaseColName
-            Case "FirstOOSDate" : Return "CASE WHEN FirstOOSDate='1900-01-01' THEN '' ELSE FORMAT(FirstOOSDate,'yyyy-MM-dd') END as FirstOOSDate"'"FirstOOSDate"
-            Case "FirstDeliveryDate" : Return "CASE WHEN FirstDeliveryDate='1900-01-01' THEN '' ELSE FORMAT(FirstDeliveryDate,'yyyy-MM-dd') END as FirstDeliveryDate"'"FirstDeliveryDate"
-            Case "RecoveryDate" : Return "CASE WHEN RecoveryDate='1900-01-01' THEN '' ELSE FORMAT(RecoveryDate,'yyyy-MM-dd') END as RecoveryDate"'"RecoveryDate"
-            Case "SKU" : Return "Material+'@'+Plant AS SKU" 'SKU
-            Case "MinlotsizeVal" : Return "(MinLotSizeMM * StdPrice * USDollarExchangeRate / NULLIF(PriceBase,0)) AS MinlotsizeVal" 'MinlotsizeVal
-            Case "ExcessAlertCreationDate" : Return "CASE WHEN ExcessAlertCreationDate='1900-01-01' THEN '' ELSE FORMAT(ExcessAlertCreationDate,'yyyy-MM-dd') END as ExcessAlertCreationDate" '"ExcessAlertCreationDate"
-            Case Else : Return """" & DatabaseColName & """"
-        End Select
-    End Function
 
     Public Overrides Function Get_SummaryTable_DefaultSortColumns() As String()
         Return {

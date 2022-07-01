@@ -32,6 +32,8 @@ Partial Class Form_PluginInfos
         Me.Label_Install_Status = New System.Windows.Forms.Label()
         Me.Label_bitness = New System.Windows.Forms.Label()
         Me.Button_Changelog = New System.Windows.Forms.Button()
+        Me.Label2 = New System.Windows.Forms.Label()
+        Me.ComboBox_System = New System.Windows.Forms.ComboBox()
         Me.SuspendLayout()
         '
         'Label1
@@ -56,7 +58,7 @@ Partial Class Form_PluginInfos
         'Label3
         '
         Me.Label3.AutoSize = True
-        Me.Label3.Location = New System.Drawing.Point(17, 111)
+        Me.Label3.Location = New System.Drawing.Point(12, 111)
         Me.Label3.Name = "Label3"
         Me.Label3.Size = New System.Drawing.Size(60, 13)
         Me.Label3.TabIndex = 2
@@ -81,7 +83,7 @@ Partial Class Form_PluginInfos
         '
         'Button_CheckUpdates
         '
-        Me.Button_CheckUpdates.Location = New System.Drawing.Point(20, 144)
+        Me.Button_CheckUpdates.Location = New System.Drawing.Point(20, 182)
         Me.Button_CheckUpdates.Name = "Button_CheckUpdates"
         Me.Button_CheckUpdates.Size = New System.Drawing.Size(117, 24)
         Me.Button_CheckUpdates.TabIndex = 5
@@ -90,7 +92,7 @@ Partial Class Form_PluginInfos
         '
         'Btn_Close
         '
-        Me.Btn_Close.Location = New System.Drawing.Point(145, 144)
+        Me.Btn_Close.Location = New System.Drawing.Point(145, 182)
         Me.Btn_Close.Name = "Btn_Close"
         Me.Btn_Close.Size = New System.Drawing.Size(117, 24)
         Me.Btn_Close.TabIndex = 6
@@ -100,7 +102,7 @@ Partial Class Form_PluginInfos
         'Label_Install_Status
         '
         Me.Label_Install_Status.AutoSize = True
-        Me.Label_Install_Status.Location = New System.Drawing.Point(17, 86)
+        Me.Label_Install_Status.Location = New System.Drawing.Point(12, 86)
         Me.Label_Install_Status.Name = "Label_Install_Status"
         Me.Label_Install_Status.Size = New System.Drawing.Size(96, 13)
         Me.Label_Install_Status.TabIndex = 7
@@ -124,11 +126,30 @@ Partial Class Form_PluginInfos
         Me.Button_Changelog.Text = "Changelog"
         Me.Button_Changelog.UseVisualStyleBackColor = True
         '
+        'Label2
+        '
+        Me.Label2.AutoSize = True
+        Me.Label2.Location = New System.Drawing.Point(13, 150)
+        Me.Label2.Name = "Label2"
+        Me.Label2.Size = New System.Drawing.Size(41, 13)
+        Me.Label2.TabIndex = 11
+        Me.Label2.Text = "System"
+        '
+        'ComboBox_System
+        '
+        Me.ComboBox_System.FormattingEnabled = True
+        Me.ComboBox_System.Location = New System.Drawing.Point(145, 142)
+        Me.ComboBox_System.Name = "ComboBox_System"
+        Me.ComboBox_System.Size = New System.Drawing.Size(116, 21)
+        Me.ComboBox_System.TabIndex = 12
+        '
         'Form_PluginInfos
         '
         Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
         Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
-        Me.ClientSize = New System.Drawing.Size(274, 182)
+        Me.ClientSize = New System.Drawing.Size(274, 218)
+        Me.Controls.Add(Me.ComboBox_System)
+        Me.Controls.Add(Me.Label2)
         Me.Controls.Add(Me.Button_Changelog)
         Me.Controls.Add(Me.Label_bitness)
         Me.Controls.Add(Me.Label_Install_Status)
@@ -158,4 +179,6 @@ Partial Class Form_PluginInfos
     Friend WithEvents Label_Install_Status As Label
     Friend WithEvents Label_bitness As Label
     Friend WithEvents Button_Changelog As Button
+    Friend WithEvents Label2 As Label
+    Friend WithEvents ComboBox_System As ComboBox
 End Class

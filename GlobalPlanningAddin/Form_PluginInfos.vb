@@ -6,8 +6,11 @@ Imports System.Threading
 Public Class Form_PluginInfos
 
     Private _NbBits As Integer
+    Private _FormLoading As Boolean
 
     Private Sub Form_PluginInfos_Load(sender As Object, e As EventArgs) Handles MyBase.Load
+
+        _FormLoading = True
 
         Globals.CenterForm(Me) 'center the form on the Excel Window
 
@@ -30,9 +33,17 @@ Public Class Form_PluginInfos
         Btn_Install.Enabled = False 'for now, disable the install button until we know if the plugin is installed or not
         Button_CheckUpdates.Enabled = False 'we also disable the upgrade if the plugin is not yet installed
 
+        'Fill the systems drop down list
+        For Each PluginSystem In ListSystems
+            ComboBox_System.Items.Add(PluginSystem.Name)
+        Next
+        ComboBox_System.SelectedItem = Current_Plugin_System.Name
+
         Btn_Close.Select() 'focus on the close button, to avoid that the text in the textbox is selected by default
 
         Globals.PluginInstallMgr.CheckPluginInstallStatus(AddressOf InstallStatusKnown)
+
+        _FormLoading = False
     End Sub
 
     Friend Sub InstallStatusKnown()
@@ -93,6 +104,28 @@ Public Class Form_PluginInfos
         End Try
 
     End Sub
+
+    Private Sub ComboBox_System_SelectedIndexChanged(sender As Object, e As EventArgs) Handles ComboBox_System.SelectedIndexChanged
+
+        If _FormLoading = True Then Exit Sub
+
+        If NbGlobalPlanningAddinCompatibleWorkbooksOpen > 0 Then
+            MsgBox("Please close all Global Planning addin compatible workbooks before changing the system.", MsgBoxStyle.Critical, "Global planning Addin")
+            Exit Sub
+        End If
+
+        Current_Plugin_System = ListSystems.Find(Function(x) x.Name = ComboBox_System.SelectedItem.ToString)
+        MsgBox("Successfully switched to " & Current_Plugin_System.Name & " system.", MsgBoxStyle.Information, "Global planning Addin")
+
+        If Current_Plugin_System.ID = 0 Then
+            ExcelAsyncUtil.QueueAsMacro(AddressOf CurRibbonActions.CheckUpdatesDone) 'Since we need COM introp, make sure this is run in the main ui thread
+        Else
+            ExcelAsyncUtil.QueueAsMacro(AddressOf CurRibbonActions.Setup_TestSystemInfoButton) 'Since we need COM introp, make sure this is run in the main ui thread
+        End If
+
+    End Sub
+
+
 
     'Private Sub Button1_Click(sender As Object, e As EventArgs) Handles Button1.Click
     '    If Globals.PluginInstallMgr.PluginIsInstalled = True Then

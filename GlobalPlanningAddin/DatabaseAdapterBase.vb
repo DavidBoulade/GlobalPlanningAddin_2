@@ -3,22 +3,51 @@ Option Strict On
 
 Imports System.Data.SqlClient
 Imports System.Threading
+
+Public Class DatabaseAdapterColumn
+    Public Property ColumnName As String
+    Public Property DataType As String
+    Public Property IsKey As Boolean
+    Public Property IsModifiable As Boolean
+    Public Property ReplacementSQLQuery As String
+
+    Public Sub New(ColumnName As String, IsKey As Boolean, IsModifiable As Boolean, DataType As String, ReplacementSQLQuery As String)
+        _ColumnName = ColumnName
+        _DataType = DataType
+        _IsKey = IsKey
+        _IsModifiable = IsModifiable
+        _ReplacementSQLQuery = ReplacementSQLQuery
+    End Sub
+End Class
+
 Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     Protected MustOverride Function Get_ConnectionString() As String
     Protected MustOverride Function Get_DatabaseSchema() As String
     Protected MustOverride Function Get_SummaryTable_Name() As String
+    Protected Overridable Function Get_SummaryTable_Alias() As String
+        Return ""
+    End Function
     Protected MustOverride Function Get_SummaryTableUpdates_TableName() As String
     Protected Overridable Function Get_SummaryTableUpdates_ViewName() As String
         Return Get_SummaryTableUpdates_TableName()
     End Function
     Protected MustOverride Function Get_DetailsTable_Name() As String
-    Public MustOverride Function Get_SummaryTable_ListOfModifiableColumns() As String()
-    Public MustOverride Function Get_SummaryTable_ListOfNumericColumns() As String()
-    Public MustOverride Function Get_SummaryTable_ListOfDateColumns() As String()
-    Public MustOverride Function Get_SummaryTable_KeyColumns() As String()
-    Public MustOverride Function Get_SummaryTable_Columns() As String()
-    Public MustOverride Function Get_SummaryTable_SQLQueryForField(DatabaseColName As String) As String
+
+    Public Function HasModifiableColumns() As Boolean
+        If SummaryTableColumns.Find(Function(x) x.IsModifiable = True) Is Nothing Then 'search first modifiable column
+            Return False
+        Else
+            Return True 'is there is at least one, return true
+        End If
+    End Function
+
+
+    Public MustOverride ReadOnly Property SummaryTableColumns As List(Of DatabaseAdapterColumn)
+    Public MustOverride ReadOnly Property SummaryTable_KeyColumns As List(Of DatabaseAdapterColumn)
+    Public MustOverride ReadOnly Property SummaryTable_ModifiableColumns As List(Of DatabaseAdapterColumn)
+
+
     Public MustOverride Function Get_SummaryTable_DefaultSortColumns() As String()
     Protected Overridable Function Get_DetailledView_Optional_OrderBySQLClause() As String 'Optional ORDER BY clause used when querying the detailled data
         Return ""
@@ -53,10 +82,10 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Public Property AbandonnedConflictsModifications As New List(Of SummaryTable_ValueModification)
     Public Property CopyToDBPercentCompleted As Single '??????
     Protected _ProgressCallback As System.Action(Of Integer, String)
-
+    Private _DBExtractDateTime As DateTime = Date.MinValue 'Date of the initial extract
 
     Public Function GetColName(ColIndex As Integer) As String
-        Return "[" & Get_SummaryTable_Columns(ColIndex) & "]"
+        Return "[" & SummaryTableColumns(ColIndex).ColumnName & "]"
     End Function
 
     Public Shared Function GetColDatabaseNameFromColName(ColName As String) As String
@@ -69,31 +98,13 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     Public Function GetColIndexFromDatabaseName(ColDatabaseName As String) As Integer
 
-        For i As Integer = 0 To Get_SummaryTable_Columns.Count - 1
-            If Get_SummaryTable_Columns(i) = ColDatabaseName Then
-                Return i
-            End If
-        Next
-        Return -1 'we didn't find it
+        Return SummaryTableColumns.IndexOf(SummaryTableColumns.Find(Function(x) x.ColumnName = ColDatabaseName))
 
     End Function
 
     Public Function GetColumnDataType(DatabaseColumnName As String) As String
 
-        'Check if numeric format
-        For Each NumericColumnName As String In Get_SummaryTable_ListOfNumericColumns()
-            If DatabaseColumnName = NumericColumnName Then
-                Return "NUMERIC"
-            End If
-        Next
-
-        'Check if date format
-        For Each DateColumnName As String In Get_SummaryTable_ListOfDateColumns()
-            If DatabaseColumnName = DateColumnName Then
-                Return "DATE"
-            End If
-        Next
-        Return "STRING" 'string by default
+        Return SummaryTableColumns.Find(Function(x) x.ColumnName = DatabaseColumnName).DataType
 
     End Function
 
@@ -115,7 +126,6 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         _CultureInf.DateTimeFormat.ShortDatePattern = "yyyy-MM-dd"
 
     End Sub
-
 
 
     Public Sub ClearDisplayFields()
@@ -159,11 +169,13 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         For i = 0 To _DisplayedFields.Count - 1
             Dim ColumnName As String = _DisplayedFields(i)
-            SQLQuery &= Get_SummaryTable_SQLQueryForField(GetColDatabaseNameFromColName(ColumnName))
+            Dim FieldSQLQuery As String = SummaryTableColumns.Find(Function(x) x.ColumnName = GetColDatabaseNameFromColName(ColumnName)).ReplacementSQLQuery
+            If FieldSQLQuery = "" Then FieldSQLQuery = ColumnName
+            SQLQuery &= FieldSQLQuery 'Get_SummaryTable_SQLQueryForField(GetColDatabaseNameFromColName(ColumnName))
             If i < _DisplayedFields.Count - 1 Then SQLQuery &= ","
         Next
 
-        SQLQuery = SQLQuery & " FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTable_Name() & "] WHERE ReportDate = '" & Format(ReportDate, "yyyy-MM-dd") & "' "
+        SQLQuery = SQLQuery & " FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTable_Name() & "] " & Get_SummaryTable_Alias() & " WHERE ReportDate = '" & Format(ReportDate, "yyyy-MM-dd") & "' "
 
         For Each FilterText As String In _QueryFilters
             SQLQuery = SQLQuery & "AND " & FilterText & " "
@@ -207,14 +219,18 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         Loop While Not (ex Is Nothing)
 
+        _DBExtractDateTime = Now 'take note of the extract Date & time
+        _DBExtractDateTime = New DateTime(_DBExtractDateTime.Year, _DBExtractDateTime.Month, _DBExtractDateTime.Day, _DBExtractDateTime.Hour, _DBExtractDateTime.Minute, _DBExtractDateTime.Second, _DBExtractDateTime.Kind) 'Keep only what we need
+
         _SummaryTable_Dataset = _ResultDataSet.Copy()
         _ResultDataSet.Dispose()
         _Adapter.Dispose()
         _Command.Dispose()
 
-        Dim PrimaryKeyColumns(Get_SummaryTable_KeyColumns.Count - 1) As DataColumn
-        For i = 0 To Get_SummaryTable_KeyColumns.Count - 1
-            PrimaryKeyColumns(i) = _SummaryTable_Dataset.Tables(0).Columns(Get_SummaryTable_KeyColumns(i))
+
+        Dim PrimaryKeyColumns(SummaryTable_KeyColumns.Count - 1) As DataColumn
+        For i = 0 To SummaryTable_KeyColumns.Count - 1
+            PrimaryKeyColumns(i) = _SummaryTable_Dataset.Tables(0).Columns(SummaryTable_KeyColumns(i).ColumnName)
         Next
         _SummaryTable_Dataset.Tables(0).PrimaryKey = PrimaryKeyColumns
 
@@ -315,18 +331,18 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         NewDataTable = New DataTable(Get_SummaryTableUpdates_TableName())
 
         ' Add columns to the table
-        Dim keys(4 + Get_SummaryTable_KeyColumns.Count) As DataColumn
+        Dim keys(4 + SummaryTable_KeyColumns.Count) As DataColumn
         Dim TableColumn As DataColumn
 
         TableColumn = New DataColumn("ChangeDateTime", System.Type.GetType("System.DateTime")) : keys(0) = TableColumn : NewDataTable.Columns.Add(TableColumn)
         TableColumn = New DataColumn("ReportDate", System.Type.GetType("System.DateTime")) : keys(1) = TableColumn : NewDataTable.Columns.Add(TableColumn)
-        For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1 'Create one column per Key
-            TableColumn = New DataColumn(Get_SummaryTable_KeyColumns(i), System.Type.GetType("System.String"))
+        For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1 'Create one column per Key
+            TableColumn = New DataColumn(SummaryTable_KeyColumns(i).ColumnName, System.Type.GetType("System.String"))
             keys(i + 2) = TableColumn
             NewDataTable.Columns.Add(TableColumn)
         Next
-        TableColumn = New DataColumn("ChangedBy", System.Type.GetType("System.String")) : keys(Get_SummaryTable_KeyColumns.Count + 2) = TableColumn : NewDataTable.Columns.Add(TableColumn)
-        TableColumn = New DataColumn("ColumName", System.Type.GetType("System.String")) : keys(Get_SummaryTable_KeyColumns.Count + 3) = TableColumn : NewDataTable.Columns.Add(TableColumn)
+        TableColumn = New DataColumn("ChangedBy", System.Type.GetType("System.String")) : keys(SummaryTable_KeyColumns.Count + 2) = TableColumn : NewDataTable.Columns.Add(TableColumn)
+        TableColumn = New DataColumn("ColumName", System.Type.GetType("System.String")) : keys(SummaryTable_KeyColumns.Count + 3) = TableColumn : NewDataTable.Columns.Add(TableColumn)
         TableColumn = New DataColumn("OldValue", System.Type.GetType("System.String")) : NewDataTable.Columns.Add(TableColumn)
         TableColumn = New DataColumn("NewValue", System.Type.GetType("System.String")) : NewDataTable.Columns.Add(TableColumn)
         TableColumn = New DataColumn("Status", System.Type.GetType("System.String")) : NewDataTable.Columns.Add(TableColumn)
@@ -343,8 +359,8 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
                 ValueModification.Processed = True
                 NewDataRow = NewDataTable.NewRow() 'Create a new row object with the right format
-                For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1 'Create one column per Key
-                    NewDataRow.Item(Get_SummaryTable_KeyColumns(i)) = ValueModification.KeyValues(i)
+                For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+                    NewDataRow.Item(SummaryTable_KeyColumns(i).ColumnName) = ValueModification.KeyValues(i)
                 Next
                 NewDataRow.Item("ChangeDateTime") = ChangeDateTime
                 NewDataRow.Item("ReportDate") = ReportDate
@@ -352,39 +368,39 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                 NewDataRow.Item("ColumName") = ValueModification.FieldName
                 Select Case ValueModification.DataType
                     Case "STRING"
-                        If IsNothing(DirectCast(ValueModification.OldValue, String)) = True Then
+                        If IsNothing(ValueModification.OldValue) Or IsDBNull(ValueModification.OldValue) Then
                             NewDataRow.Item("OldValue") = Nothing
                         Else
                             NewDataRow.Item("OldValue") = ValueModification.OldValue.ToString
                         End If
 
-                        If IsNothing(DirectCast(ValueModification.NewValue, String)) = True Then
+                        If IsNothing(ValueModification.NewValue) Or IsDBNull(ValueModification.NewValue) Then
                             NewDataRow.Item("NewValue") = Nothing
                         Else
                             NewDataRow.Item("NewValue") = ValueModification.NewValue.ToString
                         End If
 
                     Case "NUMERIC"
-                        If DirectCast(ValueModification.OldValue, Nullable(Of Double)).HasValue = False Then
+                        If IsNothing(ValueModification.OldValue) Or IsDBNull(ValueModification.OldValue) Then
                             NewDataRow.Item("OldValue") = Nothing
                         Else
                             NewDataRow.Item("OldValue") = CDbl(ValueModification.OldValue).ToString(Globalization.CultureInfo.InvariantCulture)
                         End If
 
-                        If DirectCast(ValueModification.NewValue, Nullable(Of Double)).HasValue = False Then
+                        If IsNothing(ValueModification.NewValue) Or IsDBNull(ValueModification.NewValue) Then
                             NewDataRow.Item("NewValue") = Nothing
                         Else
                             NewDataRow.Item("NewValue") = CDbl(ValueModification.NewValue).ToString(Globalization.CultureInfo.InvariantCulture)
                         End If
 
                     Case "DATE"
-                        If DirectCast(ValueModification.OldValue, Nullable(Of Date)).HasValue = False Then
+                        If IsNothing(ValueModification.OldValue) Or IsDBNull(ValueModification.OldValue) Then
                             NewDataRow.Item("OldValue") = Nothing
                         Else
                             NewDataRow.Item("OldValue") = CDate(ValueModification.OldValue).ToString("yyyy'-'MM'-'dd")
                         End If
 
-                        If DirectCast(ValueModification.NewValue, Nullable(Of Date)).HasValue = False Then
+                        If IsNothing(ValueModification.NewValue) Or IsDBNull(ValueModification.NewValue) Then
                             NewDataRow.Item("NewValue") = Nothing
                         Else
                             NewDataRow.Item("NewValue") = CDate(ValueModification.NewValue).ToString("yyyy'-'MM'-'dd")
@@ -403,7 +419,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         'Now the Data table object contains the data in memory
         Using Transaction As SqlTransaction = _Connection.BeginTransaction() 'IsolationLevel.ReadCommitted)
-            Using bulkCopy As SqlBulkCopy = New SqlBulkCopy(_Connection, SqlBulkCopyOptions.FireTriggers, Transaction) 'Create a bulk copy object
+            Using bulkCopy As New SqlBulkCopy(_Connection, SqlBulkCopyOptions.FireTriggers, Transaction) 'Create a bulk copy object
 
                 bulkCopy.DestinationTableName = "[" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_TableName() & "]" 'set the destination of the copy to the right table
 
@@ -429,8 +445,8 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         'Check the result
         SQLQuery = "SELECT "
-        For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1 'Create one column per Key
-            SQLQuery &= Get_SummaryTable_KeyColumns(i) & ","
+        For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & ","
         Next
         SQLQuery &= "COLUMNAME,OLDVALUE,NEWVALUE,STATUS,COMMENT FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_ViewName() & "]"
         SQLQuery &= "WHERE [ChangedBy]='" & UserName & "' AND "
@@ -472,7 +488,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         Loop While Not (ex Is Nothing)
 
-        ReDim KeyValues(Get_SummaryTable_KeyColumns.Count - 1)
+        ReDim KeyValues(SummaryTable_KeyColumns.Count - 1)
 
         If _ResultDataSet.Tables("ResultTable").Rows.Count = 0 Then
             Throw New System.Exception("Error: The check result query didn't return anything")
@@ -486,10 +502,10 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                 End If
 
                 Dim KeyValuesConcatStr As String = ""
-                For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1 'Read the values of the Key fields
-                    KeyValues(i) = CStr(ResultRow.Item(Get_SummaryTable_KeyColumns(i)))
+                For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1 'Read the values of the Key fields
+                    KeyValues(i) = CStr(ResultRow.Item(SummaryTable_KeyColumns(i).ColumnName))
                     KeyValuesConcatStr &= KeyValues(i)
-                    If i < Get_SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
+                    If i < SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
                 Next
 
                 ColumnName = CStr(ResultRow.Item("COLUMNAME"))
@@ -543,12 +559,21 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                         If UserChoiceToAllConflicts = "" Then
                             'the user didn't make a decision yet
 
+                            'Read the change history
+                            If ChangeDateTime.Date = ReportDate.Date Then
+                                'if reportDate is today, we will update only today-> read all changes since _DBExtractDateTime
+                                Read_ChangeLog(KeyValues, ColumnName,, _DBExtractDateTime, "PROCESSED OK")
+                            Else
+                                'if reportDate is in the past, we will update from reportDate to Today -> read all changes since this reportDate
+                                Read_ChangeLog(KeyValues, ColumnName, ReportDate, , "PROCESSED OK")
+                            End If
+
                             'create a new conflict form with the details of the problem
                             ConflictForm = New Form_Conflict(
                                                         KeyValues,
                                                         ColumnName,
-                                                        "From '" & CStr(ResultRow.Item("OLDVALUE")) & "' to '" & CStr(ResultRow.Item("NEWVALUE")) & "'",
-                                                        "Changed to '" & CStr(ResultRow.Item("COMMENT")) & "'"
+                                                        "From '" & CStr(IIf(IsDBNull(ResultRow.Item("OLDVALUE")), "{EMPTY}", ResultRow.Item("OLDVALUE").ToString)) & "' to '" & CStr(IIf(IsDBNull(ResultRow.Item("NEWVALUE")), "{EMPTY}", ResultRow.Item("NEWVALUE").ToString)) & "'",
+                                                        _ChangeLog_Dataset
                                                         )
                             ConflictForm.ShowDialog() 'display the form
 
@@ -568,8 +593,8 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                             NeedReprocess = True 'we have at least one conflict to reprocess
                             _ValueModifications.Add(New SummaryTable_ValueModification(KeyValues,
                                                                                   ColumnName,
-                                                                                  CStr(ResultRow.Item("COMMENT")),
-                                                                                  CStr(ResultRow.Item("NEWVALUE")),
+                                                                                  ResultRow.Item("COMMENT"),
+                                                                                  ResultRow.Item("NEWVALUE"),
                                                                                   GetColumnDataType(ColumnName),
                                                                                   ReportRowNumber))
 
@@ -587,12 +612,12 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                                                                                       KeyValues,
                                                                                       ColumnName,
                                                                                       "",
-                                                                                      CStr(ResultRow.Item("COMMENT")),
+                                                                                      ResultRow.Item("COMMENT"),
                                                                                       GetColumnDataType(ColumnName),
                                                                                       ReportRowNumber))
                             Else
                                 'otherwise, update the existing one. This is very unlikely to happen! this can happen only if we had several conflicts in series
-                                ModificationItem.NewValue = CStr(ResultRow.Item("COMMENT"))
+                                ModificationItem.NewValue = ResultRow.Item("COMMENT")
                             End If
 
                         End If
@@ -639,9 +664,9 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         ' Create the standard SQL query to read data from database. Each DatabaseAdapter can override this function if needed
         SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE "
-        For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
-            SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
-            If i < Get_SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
+        For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
+            If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
         Next
         SQLQuery &= " AND ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "' "
         SQLQuery &= Get_DetailledView_Optional_OrderBySQLClause()
@@ -718,9 +743,9 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
         SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTable_Name() & "] WHERE "
-        For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
-            SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
-            If i < Get_SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
+        For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
+            If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
         Next
         SQLQuery &= " AND ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "';"
 
@@ -784,9 +809,9 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
         SQLQuery = "SELECT DISTINCT(ReportDate) FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE "
-        For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
-            SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
-            If i < Get_SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
+        For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
+            If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
         Next
         SQLQuery &= ";"
 
@@ -836,7 +861,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     End Function
 
-    Public Function Read_ChangeLog(ReportDate As Date, KeyValues As String(), ColumnName As String) As Boolean
+    Public Function Read_ChangeLog(KeyValues As String(), ColumnName As String, Optional MinReportDate? As Date = Nothing, Optional MinChangeDateTime? As Date = Nothing, Optional StatusFilter As String = "") As Boolean
         Dim ex As Exception
         Dim SQLQuery As String
         Dim NbFailedQueries As Integer
@@ -847,11 +872,19 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
         SQLQuery = "SELECT TOP(50) ChangeDateTime, ReportDate, ChangedBy, OldValue, NewValue, Status FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_ViewName() & "] WHERE "
-        For i As Integer = 0 To Get_SummaryTable_KeyColumns.Count - 1
-            SQLQuery &= Get_SummaryTable_KeyColumns(i) & " = '" & KeyValues(i) & "' "
+        For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
             SQLQuery &= "AND "
         Next
-        'SQLQuery &= " ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "'" 'Should not filter on ReportDate as modifications are copied from day to day...
+        If Not IsNothing(MinReportDate) Then
+            SQLQuery &= " ReportDate >= '" & CType(MinReportDate, Date).ToString("yyyy'-'MM'-'dd") & "' AND"
+        End If
+        If Not IsNothing(MinChangeDateTime) Then
+            SQLQuery &= " ChangeDateTime >= '" & CType(MinChangeDateTime, Date).ToString("yyyy'-'MM'-'ddTHH:mm:ss") & "' AND"
+        End If
+        If StatusFilter <> "" Then
+            SQLQuery &= " Status = '" & StatusFilter & "' AND"
+        End If
         SQLQuery &= " ColumName = '" & ColumnName & "'"
         SQLQuery &= " Order by ChangeDateTime DESC;"
 
@@ -955,7 +988,6 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
 
 End Class
-
 
 
 Public Class SummaryTable_ValueModification
