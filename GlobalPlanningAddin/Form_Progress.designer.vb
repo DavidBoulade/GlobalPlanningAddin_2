@@ -47,8 +47,8 @@ Partial Class Form_Progress
         '
         'Form_Progress
         '
-        Me.AutoScaleDimensions = New System.Drawing.SizeF(6.0!, 13.0!)
-        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font
+        Me.AutoScaleDimensions = New System.Drawing.SizeF(96.0!, 96.0!)
+        Me.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi
         Me.ClientSize = New System.Drawing.Size(269, 86)
         Me.ControlBox = False
         Me.Controls.Add(Me.Label_Status)
@@ -57,7 +57,6 @@ Partial Class Form_Progress
         Me.Name = "Form_Progress"
         Me.ShowInTaskbar = False
         Me.Text = "Please wait..."
-        Me.TopMost = True
         Me.ResumeLayout(False)
         Me.PerformLayout()
 

@@ -73,15 +73,19 @@ Imports System.Xml
     'End Sub
 
     '**************************************************************************************************************************************************
-    '*** This is called when the check for updates is finished
+    '*** This is called when the check for updates is finished (+ when we switch back from a test system)
     '**************************************************************************************************************************************************
     Friend Sub CheckUpdatesDone()
         If Globals.PluginInstallMgr.CurrentPluginVersion.CompareTo(Globals.PluginInstallMgr.LatestPluginVersion) < 0 Then
             Setup_NewVersionAvailableButton()
         ElseIf Globals.PluginInstallMgr.CurrentPluginVersion.CompareTo(Globals.PluginInstallMgr.LatestPluginVersion) > 0 Then
             Setup_BetaVersionButton()
+        Else
+            Setup_StandardInfoButton()
         End If
+
         PluginUpdateThread.Join()
+
     End Sub
 
 
@@ -102,7 +106,10 @@ Imports System.Xml
 
         Globals.WorkbookActivated(Wb)
 
-        SetReportDateBtnLabel(Globals.ReportDate)
+        SetReportDateBtnLabel(Globals.ReportDate) 'Set the Report date label to the correct date
+        Globals.ThisRibbon.InvalidateControl("Btn_ReportActions_Save") 'Force check if we should enable the save button
+
+        'update header groups visibility
         If Not (Globals.ThisWorkbook Is Nothing) Then
             SetReportCreationGroupVisibleState(True)
             Globals.ThisRibbon.ActivateTab("GlobalPlanning") 'or use ActivateTabMso("TabAddIns")
@@ -112,7 +119,7 @@ Imports System.Xml
             SetProjectionDetailsGroupVisiblility(False)
         End If
 
-        MyWsChange(Wb.ActiveSheet)
+        MyWsChange(Wb.ActiveSheet) 'trigger the worksheet change logic
 
     End Sub
 
@@ -180,6 +187,17 @@ Imports System.Xml
     Private Sub Setup_BetaVersionButton()
         _PluginInfosBtnLabel = "This is a beta version"
         _PluginInfosBtnImage = My.Resources.Icon32_Info_red
+        Globals.ThisRibbon.InvalidateControl("Btn_CheckVersion")
+    End Sub
+    Private Sub Setup_StandardInfoButton()
+        _PluginInfosBtnLabel = "Version"
+        _PluginInfosBtnImage = My.Resources.Icon32_Info
+        Globals.ThisRibbon.InvalidateControl("Btn_CheckVersion")
+    End Sub
+
+    Public Sub Setup_TestSystemInfoButton()
+        _PluginInfosBtnLabel = Current_Plugin_System.Name & " system"
+        _PluginInfosBtnImage = My.Resources.Icon32_Info_test
         Globals.ThisRibbon.InvalidateControl("Btn_CheckVersion")
     End Sub
 
@@ -305,7 +323,7 @@ Imports System.Xml
 
         Globals.ReportDate = NewReportDate
         SetReportDateBtnLabel(Globals.ReportDate) 'Make sure the report date displayed is correct
-        SetWorksheetNamedRangeValue(Globals.ConfigSheet, "Report_Date", NewReportDate.ToOADate.ToString(Globalization.CultureInfo.InvariantCulture)) 'Create/Update a named range called "Report_Date" so that it can be usd in Excel formulas
+        SetWorkbookNamedRangeValue("Report_Date", NewReportDate) '.ToOADate.ToString(Globalization.CultureInfo.InvariantCulture)) 'Create/Update a named range called "Report_Date" so that it can be usd in Excel formulas
 
         Globals.ReportSheet.Visible = XlSheetVisibility.xlSheetVisible
 
@@ -316,12 +334,33 @@ Imports System.Xml
             Globals.DetailsSheet.Visible = XlSheetVisibility.xlSheetHidden
             MsgBox(Globals.Reader.LastMessage, MsgBoxStyle.Critical, "Global planning Addin")
             Globals.Reader.Dispose() 'if it didn't work (no data returned), dispose the object
+        Else
+            SetWorkbookNamedRangeValue("Report_Range", Globals.Reader.Report_Range_Incl_Header) 'Create/Update a named range called "Report_Date" so that it can be usd in Excel formulas
         End If
+        Globals.ThisRibbon.InvalidateControl("Btn_ReportActions_Save") 'Force check again if we should enable the save button
     End Sub
 
     '**************************************************************************************************************************************************
     '*** Save Changes
     '**************************************************************************************************************************************************
+
+    Function Get_Btn_Save_Enabled(control As IRibbonControl) As Boolean
+
+        If Not (Globals.Reader Is Nothing) Then
+            If Globals.Reader.HasModifiableColumns Then
+                If Globals.ReportDate.AddDays(14) < Today Then 'report date is nothing (01/01/0001) for non-compatible templates or before running report
+                    Return False 'if the report is too old, do not allow saving changes
+                Else
+                    Return True 'otherwise allow changes
+                End If
+            Else
+                Return False
+            End If
+        Else
+            Return False
+        End If
+
+    End Function
     Public Sub Btn_Save_Click(ByVal control As IRibbonControl)
 
         If Not (Globals.Reader Is Nothing) Then
@@ -479,6 +518,7 @@ Imports System.Xml
             NewText = Replace(NewText, vbCrLf, ",")
             NewText = Replace(NewText, vbTab, ",")
             NewText = Left(NewText, Len(NewText) - 1)
+            ExcelApplication.ActiveCell.NumberFormat = "@" 'need to force the text number format for when there are only numbers
             ExcelApplication.ActiveCell.Value = NewText
         End If
 
@@ -587,7 +627,7 @@ Imports System.Xml
         Try
             If System.IO.Directory.Exists(InstallPath) = False Then System.IO.Directory.CreateDirectory(InstallPath) 'Create the folder if doesn't exist
             TemplatesConfigFileBuffer = webClient.DownloadData(Globals.VersionCheckFolder & Globals.TemplatesMenuXmlFileName)
-            Dim fs As FileStream = New FileStream(InstallPath & Globals.TemplatesMenuXmlFileName, FileMode.Create)
+            Dim fs = New FileStream(InstallPath & Globals.TemplatesMenuXmlFileName, FileMode.Create)
             fs.Write(TemplatesConfigFileBuffer, 0, TemplatesConfigFileBuffer.Length)
             fs.Close()
             fs.Dispose()
@@ -603,7 +643,7 @@ Imports System.Xml
 
         Try
 
-            Dim XmlDoc As XmlDocument = New XmlDocument()
+            Dim XmlDoc = New XmlDocument()
             XmlDoc.Load(FileFullPath)
 
             Dim FoldersCounter As Integer = 0
@@ -720,7 +760,7 @@ Imports System.Xml
             If System.IO.Directory.Exists(InstallPath) = False Then System.IO.Directory.CreateDirectory(InstallPath) 'Create the folder if doesn't exist
             TemplateFileBuffer = webClient.DownloadData(Globals.VersionCheckFolder & TemplatesSubFolder & selectedTemplate.TemplateFileName)
             ProgressWindow.SetProgress(50, "Saving Template")
-            Dim fs As FileStream = New FileStream(InstallPath & selectedTemplate.TemplateFileName, FileMode.Create)
+            Dim fs = New FileStream(InstallPath & selectedTemplate.TemplateFileName, FileMode.Create)
             fs.Write(TemplateFileBuffer, 0, TemplateFileBuffer.Length)
             fs.Close()
             ProgressWindow.SetProgress(90, "Opening Template")
@@ -778,7 +818,7 @@ Imports System.Xml
     End Function
 
     Private _UsedWarned As Boolean = False
-    Public Sub TemplateLoaded(TemplateID As String, TemplateVersion As String) 'This is called after a compatible Workbook is activated
+    Public Sub TemplateLoaded(TemplateID As String, TemplateVersion As String, CustomDocType As String) 'This is called after a compatible Workbook is activated
 
         SyncLock _templates_Lock 'Make sure this is not executed while the Template config file is being loaded
 
@@ -826,16 +866,25 @@ Imports System.Xml
 
         End SyncLock
 
-        Select Case TemplateID
-            Case "MROB"
-                _TemplateImage = My.Resources.Icon32_MROB
-            Case "RTT"
-                _TemplateImage = My.Resources.Icon32_RTT
-            Case "GRUT_MPS"
+
+        Select Case CustomDocType
+            Case "SKUAlertsUI"
+                Select Case TemplateID
+                    Case "MROB"
+                        _TemplateImage = My.Resources.Icon32_MROB
+                    Case "RTT"
+                        _TemplateImage = My.Resources.Icon32_RTT
+                    Case Else
+                        _TemplateImage = Nothing
+                End Select
+            Case "GRUT_UI"
                 _TemplateImage = My.Resources.Icon32_GRUT
+            Case "GRUT_MARKET_UI"
+                _TemplateImage = My.Resources.Icon32_GRUT_Market
             Case Else
                 _TemplateImage = Nothing
         End Select
+
 
     End Sub
 
@@ -866,6 +915,7 @@ Imports System.Xml
 
     Public Sub Btn_CheckTemplateVersion_Click(control As CustomUI.IRibbonControl)
         MsgBox("Current template:" & vbCrLf & _CurTemplateDescr & vbCrLf & "Version " & _CurTemplateVersion, MsgBoxStyle.OkOnly, "Global planning Addin")
+        Globals.Reader.GroupBySKULevel()
     End Sub
 
 

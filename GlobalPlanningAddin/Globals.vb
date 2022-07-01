@@ -16,6 +16,24 @@ Public Module Globals
     Friend Const TemplatesMenuXmlFileName As String = "templates.xml"
     Friend Const TemplatesSubFolder As String = "Templates\"
 
+    Friend Class Plugin_System
+        Public Property ID As Integer
+        Public Property Name As String
+        Public Sub New(ID As Integer, Name As String)
+            _ID = ID
+            _Name = Name
+        End Sub
+
+    End Class
+
+    Friend ReadOnly ListSystems As New List(Of Plugin_System)(
+        {
+        New Plugin_System(0, "Production"),   '0 is the default production system
+        New Plugin_System(1, "Test")          '1 is the first alternate system
+        })
+
+    Friend Property Current_Plugin_System As Plugin_System = ListSystems.Find(Function(x) x.ID = 0)
+
     Friend Property PluginInstallMgr As PluginInstallManager
 
     Friend ReadOnly Property PluginVersion As Version = My.Application.Info.Version
@@ -39,6 +57,12 @@ Public Module Globals
             Else
                 Return Nothing
             End If
+        End Get
+    End Property
+
+    Friend ReadOnly Property NbGlobalPlanningAddinCompatibleWorkbooksOpen As Integer
+        Get
+            Return _WorkbooksData.Count
         End Get
     End Property
 
@@ -88,7 +112,9 @@ Public Module Globals
 
 
         'Check if this workbook is a workbook this plugin can handle
-        If GetCustomDocumentProperty(Wb, "CustomDocType") = "SKUAlertsUI" Or GetCustomDocumentProperty(Wb, "CustomDocType") = "GRUT_UI" Then
+        If GetCustomDocumentProperty(Wb, "CustomDocType") = "SKUAlertsUI" Or
+            GetCustomDocumentProperty(Wb, "CustomDocType") = "GRUT_UI" Or
+            GetCustomDocumentProperty(Wb, "CustomDocType") = "GRUT_MARKET_UI" Then
 
             'check if it is the first time we see this workbook
             If _WorkbooksData.Exists(Function(x) x.Workbook Is Wb) = False Then
@@ -119,7 +145,7 @@ Public Module Globals
             If _DetailsSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the detailed view worksheet")
 
 
-            _CurRibbonActions.TemplateLoaded(GetCustomDocumentProperty(Wb, "TemplateID"), GetCustomDocumentProperty(Wb, "TemplateVersion"))
+            _CurRibbonActions.TemplateLoaded(GetCustomDocumentProperty(Wb, "TemplateID"), GetCustomDocumentProperty(Wb, "TemplateVersion"), GetCustomDocumentProperty(Wb, "CustomDocType"))
 
         Else
             _ThisWorkbookData = Nothing
@@ -156,19 +182,35 @@ Public Module Globals
         Return ""
     End Function
 
-    Public Sub SetWorksheetNamedRangeValue(Ws As Microsoft.Office.Interop.Excel.Worksheet, NamedRangeName As String, NewValue As String)
+    Public Sub SetWorksheetNamedRangeValue(Ws As Microsoft.Office.Interop.Excel.Worksheet, NamedRangeName As String, NewRefersTo As Object)
         Dim FoundSw As Boolean = False
         For Each CustomNamedRange As Microsoft.Office.Interop.Excel.Name In Ws.Names
             If Strings.InStr(UCase(CustomNamedRange.Name), UCase(NamedRangeName)) <> 0 Then
                 'The Name already exists, just update it
-                CustomNamedRange.RefersTo = NewValue
+                CustomNamedRange.RefersTo = NewRefersTo
                 FoundSw = True
                 Exit For
             End If
         Next
         If FoundSw = False Then
             'The name doesn't exist, create it now
-            Dim NewName As Name = Ws.Names.Add(NamedRangeName, NewValue, True)
+            Dim NewName As Name = Ws.Names.Add(NamedRangeName, NewRefersTo, True)
+        End If
+    End Sub
+
+    Public Sub SetWorkbookNamedRangeValue(NamedRangeName As String, NewRefersTo As Object)
+        Dim FoundSw As Boolean = False
+        For Each CustomNamedRange As Microsoft.Office.Interop.Excel.Name In ThisWorkbook.Names
+            If Strings.InStr(UCase(CustomNamedRange.Name), UCase(NamedRangeName)) <> 0 Then
+                'The Name already exists, just update it
+                CustomNamedRange.RefersTo = NewRefersTo
+                FoundSw = True
+                Exit For
+            End If
+        Next
+        If FoundSw = False Then
+            'The name doesn't exist, create it now
+            Dim NewName As Name = ThisWorkbook.Names.Add(NamedRangeName, NewRefersTo, True)
         End If
     End Sub
 
@@ -210,7 +252,7 @@ Public Module Globals
     Public Declare Function GetWindowRect Lib "user32" (ByVal HWND As Integer, ByRef lpRect As RECT) As Integer
     Public Sub CenterForm(FormToCenter As System.Windows.Forms.Form)
         Try
-            Dim xlWindowRect As RECT = New RECT()
+            Dim xlWindowRect = New RECT()
             GetWindowRect(ExcelDnaUtil.WindowHandle, xlWindowRect)
             Dim X As Integer = (xlWindowRect.Right - xlWindowRect.Left - FormToCenter.Width) / 2 + xlWindowRect.Left
             Dim Y As Integer = (xlWindowRect.Bottom - xlWindowRect.Top - FormToCenter.Height) / 2 + xlWindowRect.Top
