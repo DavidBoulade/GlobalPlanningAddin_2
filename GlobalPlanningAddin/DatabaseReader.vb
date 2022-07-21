@@ -47,16 +47,16 @@ Friend Class DatabaseReader : Implements IDisposable
         Return _DBAdapter.HasModifiableColumns()
     End Function
 
-    Sub New(ReportDate As Date, DatabaseAdapterType As String)
+    Sub New(ReportDate As Date, DatabaseAdapterType As String, TemplateID As String)
         _ReportDate = ReportDate
 
         Select Case DatabaseAdapterType
             Case "SKUAlertsUI"
-                _DBAdapter = New SKUAlertsDatabaseAdapter()
+                _DBAdapter = New SKUAlertsDatabaseAdapter(TemplateID)
             Case "GRUT_UI"
-                _DBAdapter = New GRUTDatabaseAdapter()
+                _DBAdapter = New GRUTDatabaseAdapter(TemplateID)
             Case "GRUT_MARKET_UI"
-                _DBAdapter = New GRUTMarketDatabaseAdapter()
+                _DBAdapter = New GRUTMarketDatabaseAdapter(TemplateID)
         End Select
 
         ReDim _Report_Param_Row(0 To _DBAdapter.SummaryTableColumns.Count - 1) 'Row number of each column in the params worksheet
@@ -281,6 +281,7 @@ Friend Class DatabaseReader : Implements IDisposable
         'Delete everything from the report worksheet
         If ReportSheet.ProtectContents = True Then ReportSheet.Unprotect()
         ReportSheet.Range(ReportSheet.Columns(1), ReportSheet.Columns(500)).Delete(XlDeleteShiftDirection.xlShiftToLeft)
+        ReportSheet.Rows.ClearOutline()
     End Sub
 
     Private Sub ApplyReportColumnsSetup()
@@ -436,46 +437,40 @@ Friend Class DatabaseReader : Implements IDisposable
         ReportSheet.Outline.ShowLevels(ColumnLevels:=1)
     End Sub
 
-    Private Sub Add_SummaryReport_FilterAndSort()
-
-        'Add autofilter *******************************************
-        ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)).AutoFilter(Field:=1) 'Field:=Report_Col_xxx, Criteria1:="=X"
-
-        'Sort the report **********************************
-        For i As Integer = 0 To _DBAdapter.Get_SummaryTable_DefaultSortColumns.Count - 1
-            Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.Get_SummaryTable_DefaultSortColumns(i))
-            If _Report_ColNumber(ColIndex) > 0 Then 'is this column mapped in the report? if yes sort by it
-                ReportSheet.AutoFilter.Sort.SortFields.Clear()
-                ReportSheet.AutoFilter.Sort.SortFields.Add(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Report_ColNumber(ColIndex))), XlSortOn.xlSortOnValues, XlSortOrder.xlDescending, XlSortDataOption.xlSortNormal)
-                With ReportSheet.AutoFilter.Sort
-                    .Header = XlYesNoGuess.xlYes
-                    .MatchCase = False
-                    .Orientation = XlSortOrientation.xlSortColumns
-                    .SortMethod = XlSortMethod.xlPinYin
-                    .Apply()
-                End With
-                Exit For
-            End If
-        Next i
-
-    End Sub
-
-    Private Sub CountWsFrozenRowsnCols(ws As Worksheet, ByRef ReturnFrozenColumnsCount As Integer, ByRef ReturnFrozenRowsCount As Integer)
+    Private Function CountWsFrozenRows(ws As Worksheet) As Integer
         Dim CurSheet As Worksheet
         CurSheet = DirectCast(ThisWorkbook.ActiveSheet, Worksheet)
 
-        'ws.Application.ScreenUpdating = False
         ws.Activate()
         If ws.Application.ActiveWindow.FreezePanes = True Then
-            ReturnFrozenColumnsCount = Globals.ThisWorkbook.Windows(1).SplitColumn
-            ReturnFrozenRowsCount = Globals.ThisWorkbook.Windows(1).SplitRow
-            ws.Application.ActiveWindow.FreezePanes = False
+            Return Globals.ThisWorkbook.Windows(1).SplitRow
         Else
-            ReturnFrozenColumnsCount = 0
-            ReturnFrozenRowsCount = 0
+            Return 0
         End If
         CurSheet.Activate() 'return to active sheet   
-        'ws.Application.ScreenUpdating = True
+    End Function
+
+    Private Function CountWsFrozenCols(ws As Worksheet) As Integer
+        Dim CurSheet As Worksheet
+        CurSheet = DirectCast(ThisWorkbook.ActiveSheet, Worksheet)
+
+        ws.Activate()
+        If ws.Application.ActiveWindow.FreezePanes = True Then
+            Return Globals.ThisWorkbook.Windows(1).SplitColumn
+        Else
+            Return 0
+        End If
+        CurSheet.Activate() 'return to active sheet   
+    End Function
+
+    Private Sub WorksheetRemoveFreezePanes(ws As Worksheet)
+        Dim CurSheet As Worksheet
+        CurSheet = DirectCast(ThisWorkbook.ActiveSheet, Worksheet)
+        ws.Activate()
+        If ws.Application.ActiveWindow.FreezePanes = True Then
+            ws.Application.ActiveWindow.FreezePanes = False
+        End If
+        CurSheet.Activate() 'return to active sheet   
     End Sub
 
     Private Sub WorksheetFreezePanes(ws As Worksheet, FrozenColumnsCount As Integer, FrozenRowsCount As Integer)
@@ -500,6 +495,14 @@ Friend Class DatabaseReader : Implements IDisposable
             Globals.ThisWorkbook.Application.ScreenUpdating = False
 
             If ConfigSheet.AutoFilterMode = True Then ConfigSheet.AutoFilter.ShowAllData()
+
+            _ProgressWindow.SetProgress(1, "Checking if data is ready")
+            If Run_Preliminary_Check_Query() = False Then
+                _LastMessage = "Process cancelled"
+                CloseProgressWindow()
+                Globals.ThisWorkbook.Application.ScreenUpdating = True
+                Return False
+            End If
 
             _ProgressWindow.SetProgress(5, "Reading params")
 
@@ -551,7 +554,9 @@ Friend Class DatabaseReader : Implements IDisposable
             End If
 
             _ProgressWindow.SetProgress(65, "Cleaning old worksheet")
-            CountWsFrozenRowsnCols(ReportSheet, ReportFrozenColumnsCount, ReportFrozenRowsCount) 'Count Frozen cols/rows and remove freeze panes
+            ReportFrozenColumnsCount = CountWsFrozenCols(ReportSheet)
+            ReportFrozenRowsCount = CountWsFrozenRows(ReportSheet)
+            WorksheetRemoveFreezePanes(ReportSheet)
             CleanReportWorksheet() 'Delete everything from the report worksheet
 
             _ProgressWindow.SetProgress(70, "Formatting columns")
@@ -571,7 +576,7 @@ Friend Class DatabaseReader : Implements IDisposable
             DrawAllBorders(ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)))
 
             _ProgressWindow.SetProgress(95, "Adding filter and sort")
-            Add_SummaryReport_FilterAndSort() 'Add autofilter and sort the report
+            AutoFilterAndSortReport(_DBAdapter.SummaryTable_DefaultSortColumns)
             WorksheetFreezePanes(ReportSheet, ReportFrozenColumnsCount, ReportFrozenRowsCount) 'Freeze panes (this also activates the report sheet)
 
             _ProgressWindow.SetProgress(100, "OK")
@@ -591,6 +596,19 @@ Friend Class DatabaseReader : Implements IDisposable
         End Try
 
 
+    End Function
+
+    Private Function Run_Preliminary_Check_Query() As Boolean
+        Dim ResultStr As String = _DBAdapter.Run_Preliminary_Check_Query()
+        If ResultStr <> "" Then
+            If MsgBox("Warning! " & ResultStr & vbCrLf & "Do you want to continue anyway?", MsgBoxStyle.YesNo, "Global planning Addin") = MsgBoxResult.Yes Then
+                Return True
+            Else
+                Return False
+            End If
+        Else
+            Return True
+        End If
     End Function
 
     Private Sub CloseProgressWindow()
@@ -875,7 +893,9 @@ Friend Class DatabaseReader : Implements IDisposable
 
     Public Function Is_SummaryWorksheetColumn_Modifiable(ReportColumn As Integer) As Boolean 'Check if the given Worksheet column is modifiable
         If ReportColumn > _ReportNbColumns Or ReportColumn < 1 Then Return False
-        Dim ColumnName As String = _DBAdapter.SummaryTableColumns(GetReportColIndex(ReportColumn)).ColumnName
+        Dim ColIndex As Integer = GetReportColIndex(ReportColumn)
+        If ColIndex = -1 Then Return False
+        Dim ColumnName As String = _DBAdapter.SummaryTableColumns(ColIndex).ColumnName
         Return _DBAdapter.SummaryTable_ModifiableColumns.Find(Function(x) x.ColumnName = ColumnName) IsNot Nothing '(ReportColumn).Contains(ColumnName)
     End Function
     Public Function GetKeyValues_For_SummaryReportRow(ReportRow As Integer, ReportSheet As Worksheet) As String()
@@ -1071,13 +1091,111 @@ Friend Class DatabaseReader : Implements IDisposable
 
     End Function
 
-    Public Sub GroupBySKULevel()
+    Private Sub AutoFilterAndSortReport(SortFields As List(Of SortField))
+
+        'Make sure the autofilter is setup
+        If ReportSheet.AutoFilterMode = False Then
+            ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW - 1, 1), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _ReportNbColumns)).AutoFilter(Field:=1)
+        End If
+
+        ReportSheet.AutoFilter.Sort.SortFields.Clear()
+
+        If Not (SortFields Is Nothing) AndAlso SortFields.Count > 0 Then
+
+            For i As Integer = 0 To SortFields.Count - 1
+                Dim ColNum As Integer = _Report_ColNumber(_DBAdapter.GetColIndexFromDatabaseName(SortFields(i).ColumnDatabaseName))
+                If ColNum <> 0 Then
+                    ReportSheet.AutoFilter.Sort.SortFields.Add(
+                                ReportSheet.Range(ReportSheet.Cells(REPORT_FIRSTROW, ColNum), ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, ColNum)),
+                                XlSortOn.xlSortOnValues,
+                                IIf(SortFields(i).SortOrder = SortField.SortOrders.Ascending, XlSortOrder.xlAscending, XlSortOrder.xlDescending),
+                                XlSortDataOption.xlSortNormal)
+                End If
+            Next
+
+            With ReportSheet.AutoFilter.Sort
+                .Header = XlYesNoGuess.xlYes
+                .MatchCase = False
+                .Orientation = XlSortOrientation.xlSortColumns
+                .SortMethod = XlSortMethod.xlPinYin
+                .Apply()
+            End With
+        End If
+
+    End Sub
+
+    Public Sub GRUTReport_SortBySKURisk()
+
+        If _DBAdapter.GetColIndexFromDatabaseName("ServiceRiskFactor") = -1 Then
+            MsgBox("The column 'ServiceRiskFactor' must be present in the columns definition table", MsgBoxStyle.Critical, "Global planning Addin")
+            Return
+        End If
+        If _Report_ColNumber(_DBAdapter.GetColIndexFromDatabaseName("ServiceRiskFactor")) = 0 Then
+            MsgBox("The column 'ServiceRiskFactor' is mandatory in order to use the sorting", MsgBoxStyle.Critical, "Global planning Addin")
+            Return
+        End If
+
+        Globals.ThisWorkbook.Application.ScreenUpdating = False
+
+        'Clear the groups, sorting won't work properly otherwise.
+        ReportSheet.Outline.ShowLevels(8) 'Display all levels before removing the outline, otherwise the lines remain hidden
+        For i As Integer = 1 To 8 'there are 8 levels max in Excel
+            Try
+                ReportSheet.Rows.Ungroup()
+            Catch ex As Exception 'Didn't find a way to count existing outline levels... so we need to try and catch the error
+                Exit For
+            End Try
+        Next
+
+        AutoFilterAndSortReport(New List(Of SortField)(
+                {New SortField("ServiceRiskFactor", SortField.SortOrders.Descending)}
+                )
+           )
+
+        Globals.ThisWorkbook.Application.ScreenUpdating = True
+    End Sub
+    Public Sub GRUTReport_SortByItemRisk_GroupBySKULevel()
 
         Dim RangeRowNo As Integer
         Dim CurrentLevel As Integer
+        Dim NbColumnsToColor As Integer
+
+        If _DBAdapter.GetColIndexFromDatabaseName("Item_ServiceRiskFactor") = -1 Or _DBAdapter.GetColIndexFromDatabaseName("Sourcing_Path") = -1 Then
+            MsgBox("The columns 'Item_ServiceRiskFactor' and 'Sourcing_Path' must be present in the columns definition table", MsgBoxStyle.Critical, "Global planning Addin")
+            Return
+        End If
+        If _Report_ColNumber(_DBAdapter.GetColIndexFromDatabaseName("Item_ServiceRiskFactor")) = 0 Then
+            MsgBox("The column 'Item_ServiceRiskFactor' is mandatory in order to use the hierarchical sorting", MsgBoxStyle.Critical, "Global planning Addin")
+            Return
+        End If
+        If _Report_ColNumber(_DBAdapter.GetColIndexFromDatabaseName("Sourcing_Path")) = 0 Then
+            MsgBox("The column 'Sourcing_Path' is mandatory in order to use the hierarchical sorting", MsgBoxStyle.Critical, "Global planning Addin")
+            Return
+        End If
+
+        NbColumnsToColor = CountWsFrozenCols(ReportSheet)
+
+        Globals.ThisWorkbook.Application.ScreenUpdating = False
+
+        _ProgressWindow = New Form_Progress("Formatting the report")
+        _ProgressWindow.Show()
+
+        'Clear the groups, sorting won't work properly otherwise. Didn't find a way to count existing outline levels... so we need to catch the error
+        For i As Integer = 1 To 8 'there are 8 levels max in Excel
+            Try
+                ReportSheet.Rows.Ungroup()
+            Catch ex As Exception
+                Exit For
+            End Try
+        Next
 
         ReportSheet.Outline.SummaryRow = XlSummaryRow.xlSummaryAbove 'shows the group + on the top line
 
+        AutoFilterAndSortReport(New List(Of SortField)(
+                        {New SortField("Item_ServiceRiskFactor", SortField.SortOrders.Descending),
+                        New SortField("Sourcing_Path", SortField.SortOrders.Ascending)}
+                        )
+                   )
 
         Dim SKULevelColNum As Integer = _Report_ColNumber(_DBAdapter.GetColIndexFromDatabaseName("SKU_Level"))
 
@@ -1086,19 +1204,30 @@ Friend Class DatabaseReader : Implements IDisposable
                                                         ReportSheet.Cells(REPORT_FIRSTROW, SKULevelColNum),
                                                         ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, SKULevelColNum)))
 
+        'Make grouping
         For CurrentLevel = 3 To 1 Step -1
 
             RangeRowNo = 1
             Dim FirstGroupRow As Integer
             Dim InAGroup As Boolean = False
             Do
+                If (RangeRowNo + (3 - CurrentLevel) * SKULevel_Rng.NbRows) Mod CInt(((SKULevel_Rng.NbRows * 3) / 100)) = 0 Then
+                    _ProgressWindow.SetProgress(CInt(80 * ((RangeRowNo + (3 - CurrentLevel) * SKULevel_Rng.NbRows) / (SKULevel_Rng.NbRows * 3))), "Formatting the report")
+                End If
 
-                If SKULevel_Rng.CellValue_Int(RangeRowNo) = CurrentLevel And Not InAGroup Then
+                Dim CurrentRowLevel As Integer
+                If SKULevel_Rng.CellValue_Str(RangeRowNo) = "" Then
+                    CurrentRowLevel = 1
+                Else
+                    CurrentRowLevel = SKULevel_Rng.CellValue_Int(RangeRowNo)
+                End If
+
+                If CurrentRowLevel = CurrentLevel And Not InAGroup Then
 
                     FirstGroupRow = RangeRowNo
                     InAGroup = True
 
-                ElseIf SKULevel_Rng.CellValue_Int(RangeRowNo) < CurrentLevel And InAGroup Then
+                ElseIf CurrentRowLevel < CurrentLevel And InAGroup Then
 
                     Dim FirstReportRowNo = FirstGroupRow + REPORT_FIRSTROW - 1
                     Dim LastReportRowNo = RangeRowNo - 1 + REPORT_FIRSTROW - 1
@@ -1117,19 +1246,42 @@ Friend Class DatabaseReader : Implements IDisposable
             End If
         Next
 
-        RangeRowNo = 1
-        Dim ReportRowNo As Integer
-        Do
+        'Coloring of the cells
+        If NbColumnsToColor > 0 Then
+            RangeRowNo = 1
+            Dim ReportRowNo As Integer
+            Do
 
-            CurrentLevel = SKULevel_Rng.CellValue_Int(RangeRowNo)
-            ReportRowNo = RangeRowNo + REPORT_FIRSTROW - 1
+                CurrentLevel = SKULevel_Rng.CellValue_Int(RangeRowNo)
+                ReportRowNo = RangeRowNo + REPORT_FIRSTROW - 1
 
-            ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, 31)).Interior.Color = HslToRgba(148 / 255, 150 / 255, (114 + CurrentLevel * 40) / 255)
-            If CurrentLevel = 0 Then ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, 31)).Font.Color = System.Drawing.Color.White
+                If RangeRowNo Mod CInt((SKULevel_Rng.NbRows / 20)) = 0 Then
+                    _ProgressWindow.SetProgress(80 + CInt(20 * (RangeRowNo / SKULevel_Rng.NbRows)), "Coloring the report")
+                End If
 
-            RangeRowNo += 1
-            If RangeRowNo > SKULevel_Rng.NbRows Then Exit Do
-        Loop
+                If SKULevel_Rng.CellValue_Str(RangeRowNo) = "" Then
+                    'Gray
+                    ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, NbColumnsToColor)).Interior.Color = XlRgbColor.rgbLightGray 'HslToRgba(148 / 255, 150 / 255, (114 + CurrentLevel * 40) / 255)
+
+                Else
+                    'Blue
+                    ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, NbColumnsToColor)).Interior.Color = HslToRgba(148 / 255, 150 / 255, (114 + CurrentLevel * 40) / 255)
+                    If CurrentLevel = 0 Then ReportSheet.Range(ReportSheet.Cells(ReportRowNo, 1), ReportSheet.Cells(ReportRowNo, NbColumnsToColor)).Font.Color = System.Drawing.Color.White
+                End If
+
+                RangeRowNo += 1
+                If RangeRowNo > SKULevel_Rng.NbRows Then Exit Do
+            Loop
+        End If
+
+        'Close the groups one by one
+        ReportSheet.Outline.ShowLevels(4)
+        ReportSheet.Outline.ShowLevels(3)
+        ReportSheet.Outline.ShowLevels(2)
+        ReportSheet.Outline.ShowLevels(1)
+
+        CloseProgressWindow()
+        Globals.ThisWorkbook.Application.ScreenUpdating = True
 
     End Sub
 
@@ -1288,7 +1440,6 @@ Module DatabaseReaderUtils
     End Function
 
 End Module
-
 
 Public Class ExcelRangeArray
 

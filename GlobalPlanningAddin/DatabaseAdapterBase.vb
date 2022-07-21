@@ -20,6 +20,20 @@ Public Class DatabaseAdapterColumn
     End Sub
 End Class
 
+Public Class SortField
+    Public Enum SortOrders
+        Ascending
+        Descending
+    End Enum
+    Public Property ColumnDatabaseName As String
+    Public Property SortOrder As SortOrders
+
+    Public Sub New(ColumnDatabaseName As String, SortOrder As SortOrders)
+        _ColumnDatabaseName = ColumnDatabaseName
+        _SortOrder = SortOrder
+    End Sub
+End Class
+
 Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     Protected MustOverride Function Get_ConnectionString() As String
@@ -43,12 +57,14 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     End Function
 
 
-    Public MustOverride ReadOnly Property SummaryTableColumns As List(Of DatabaseAdapterColumn)
-    Public MustOverride ReadOnly Property SummaryTable_KeyColumns As List(Of DatabaseAdapterColumn)
-    Public MustOverride ReadOnly Property SummaryTable_ModifiableColumns As List(Of DatabaseAdapterColumn)
+    Public ReadOnly Property SummaryTableColumns As New List(Of DatabaseAdapterColumn)
+    Public ReadOnly Property SummaryTable_KeyColumns As List(Of DatabaseAdapterColumn)
+    Public ReadOnly Property SummaryTable_ModifiableColumns As List(Of DatabaseAdapterColumn)
 
+    Public Overridable Function SummaryTable_DefaultSortColumns() As List(Of SortField)
+        Return Nothing
+    End Function
 
-    Public MustOverride Function Get_SummaryTable_DefaultSortColumns() As String()
     Protected Overridable Function Get_DetailledView_Optional_OrderBySQLClause() As String 'Optional ORDER BY clause used when querying the detailled data
         Return ""
     End Function
@@ -63,6 +79,10 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Public Overridable Function Get_DetailledView_ColumnFilter(KeyValues() As String) As List(Of ColumnFilter)
         Static Columnsfilters As New List(Of ColumnFilter) 'no need to create a new list each time this is called
         Return Columnsfilters 'By default, we return an empty list
+    End Function
+
+    Protected Overridable Function Get_Preliminary_Check_Query() As String
+        Return ""
     End Function
 
     Protected ReadOnly _Connection As SqlConnection
@@ -110,7 +130,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     Private ReadOnly _CultureInf As Globalization.CultureInfo
 
-    Sub New()
+    Sub New(TemplateID As String)
 
         'Connect to SQL server
         _Connection = GetSQLConnection(Get_ConnectionString())
@@ -124,6 +144,14 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         _CultureInf.NumberFormat.NumberGroupSeparator = ""
         _CultureInf.DateTimeFormat.DateSeparator = "-"
         _CultureInf.DateTimeFormat.ShortDatePattern = "yyyy-MM-dd"
+
+        If Read_Columns_Properties(TemplateID) = False Then
+            Throw New System.Exception("Unable to read columns properties from database server")
+        End If
+
+        SummaryTable_KeyColumns = _SummaryTableColumns.FindAll(Function(x) x.IsKey = True)
+        SummaryTable_ModifiableColumns = _SummaryTableColumns.FindAll(Function(x) x.IsModifiable = True)
+
 
     End Sub
 
@@ -149,6 +177,67 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     Public Function ModificationsCount() As Integer
         Return _ValueModifications.Count
+    End Function
+
+    Public Function Run_Preliminary_Check_Query() As String
+        Dim ex As Exception
+        Dim SQLQuery As String
+        Dim NbFailedQueries As Integer
+        Dim ReportNbRow As Integer
+
+        If Get_Preliminary_Check_Query() = "" Then Return ""
+
+        If Not (_ResultDataSet Is Nothing) Then _ResultDataSet.Dispose()
+        If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
+        If Not (_Command Is Nothing) Then _Command.Dispose()
+
+        'SQL query
+        SQLQuery = Get_Preliminary_Check_Query()
+
+        'Now trigger it
+        NbFailedQueries = 0
+        Do
+
+            _Command = New SqlCommand(SQLQuery, _Connection)
+            _Adapter = New SqlDataAdapter(_Command)
+            _ResultDataSet = New DataSet
+
+            ex = Nothing
+            Try
+                ReportNbRow = _Adapter.Fill(_ResultDataSet, "ResultTable") 'Try to run the query, and update the number of rows
+            Catch ex
+                'Dispose these object, we will recreate new instances in the next loop
+                _ResultDataSet.Dispose()
+                _Adapter.Dispose()
+                _Command.Dispose()
+
+                NbFailedQueries += 1
+                'AddMessageToStack(New LogMessage("Warning: Unable to xxxx (attempt " & NbFailedQueries.ToString(Globalization.CultureInfo.InvariantCulture) & ") : " & ex.Message, LogLevel.LogWarning))
+
+                If NbFailedQueries = 5 Then 'after 5 failed trials, we give up for now
+                    'AddMessageToStack(New LogMessage("Error: Unable to xxxx (will retry in 5 min) : " & ex.Message, LogLevel.LogError))
+                    Throw New System.Exception("Error while running the data read query from the database")
+                Else
+                    Thread.Sleep(NbFailedQueries * 1000) 'if we tried less than 5 times, pause the thread for an increasing amount of time until next trial
+                End If
+
+                'Re-check the connection to the database server for next loop
+                If CheckSQLConnectionAndReconnect(_Connection, 5) = False Then
+                    Throw New System.Exception("Error: Unable to connect to the database")
+                End If
+
+            End Try
+
+        Loop While Not (ex Is Nothing)
+
+        Dim ResultStr = _ResultDataSet.Tables(0).Rows(0).Item(0).ToString()
+
+        _ResultDataSet.Dispose()
+        _Adapter.Dispose()
+        _Command.Dispose()
+
+        Return ResultStr
+
     End Function
 
     Public Function Read_SummaryTable_Data(ReportDate As Date) As Integer
@@ -235,6 +324,79 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         _SummaryTable_Dataset.Tables(0).PrimaryKey = PrimaryKeyColumns
 
         Return ReportNbRow
+
+    End Function
+
+    Public Function Read_Columns_Properties(TemplateID As String) As Boolean
+        Dim ex As Exception
+        Dim SQLQuery As String
+        Dim NbFailedQueries As Integer
+        Dim ReportNbRow As Integer
+
+        If Not (_ResultDataSet Is Nothing) Then _ResultDataSet.Dispose()
+        If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
+        If Not (_Command Is Nothing) Then _Command.Dispose()
+
+        ' Create the SQL query to read data from database
+        SQLQuery = "SELECT COLUMNNAME,ISKEY,ISMODIFIABLE,MODIFIABLEDATATYPE "
+        SQLQuery &= "From [GPA].[TEMPLATE_COLUMNS_VIEW]"
+        SQLQuery &= "WHERE TEMPLATENAME = '" & TemplateID & "';"
+
+        'Now trigger it
+        NbFailedQueries = 0
+        Do
+
+            _Command = New SqlCommand(SQLQuery, _Connection)
+            _Adapter = New SqlDataAdapter(_Command)
+            _ResultDataSet = New DataSet
+
+            ex = Nothing
+            Try
+                ReportNbRow = _Adapter.Fill(_ResultDataSet, "ResultTable") 'Try to run the query, and update the number of rows
+            Catch ex
+                'Dispose these object, we will recreate new instances in the next loop
+                _ResultDataSet.Dispose()
+                _Adapter.Dispose()
+                _Command.Dispose()
+
+                NbFailedQueries += 1
+                'AddMessageToStack(New LogMessage("Warning: Unable to xxxx (attempt " & NbFailedQueries.ToString(Globalization.CultureInfo.InvariantCulture) & ") : " & ex.Message, LogLevel.LogWarning))
+
+                If NbFailedQueries = 5 Then 'after 5 failed trials, we give up for now
+                    'AddMessageToStack(New LogMessage("Error: Unable to xxxx (will retry in 5 min) : " & ex.Message, LogLevel.LogError))
+                    Throw New System.Exception("Error while running the data read query from the database")
+                Else
+                    Thread.Sleep(NbFailedQueries * 1000) 'if we tried less than 5 times, pause the thread for an increasing amount of time until next trial
+                End If
+
+                'Re-check the connection to the database server for next loop
+                If CheckSQLConnectionAndReconnect(_Connection, 5) = False Then
+                    Throw New System.Exception("Error: Unable to connect to the database")
+                End If
+
+            End Try
+
+        Loop While Not (ex Is Nothing)
+
+
+        For Each ResultRow As DataRow In _ResultDataSet.Tables("ResultTable").Rows
+
+            _SummaryTableColumns.Add(
+                New DatabaseAdapterColumn(
+                        CStr(ResultRow.Item("COLUMNNAME")),
+                        CBool(ResultRow.Item("ISKEY")),
+                        CBool(ResultRow.Item("ISMODIFIABLE")),
+                        CStr(IIf(IsDBNull(ResultRow.Item("MODIFIABLEDATATYPE")), "", ResultRow.Item("MODIFIABLEDATATYPE"))),
+                        "")
+                )
+        Next
+
+        _ResultDataSet.Dispose()
+        _Adapter.Dispose()
+        _Command.Dispose()
+
+
+        Return True
 
     End Function
 

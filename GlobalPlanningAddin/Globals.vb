@@ -101,33 +101,47 @@ Public Module Globals
             End If
         End Get
     End Property
+    Friend ReadOnly Property TemplateID As String
+        Get
+            If Not (_ThisWorkbookData Is Nothing) Then
+                Return _ThisWorkbookData.TemplateID
+            Else
+                Return Nothing
+            End If
+        End Get
+    End Property
 
     Friend ReadOnly Property ConfigSheet As Microsoft.Office.Interop.Excel.Worksheet = Nothing
     Friend ReadOnly Property ReportSheet As Microsoft.Office.Interop.Excel.Worksheet = Nothing
     Friend ReadOnly Property DetailsSheet As Microsoft.Office.Interop.Excel.Worksheet = Nothing
 
 
-    Public Sub WorkbookActivated(Wb As Microsoft.Office.Interop.Excel.Workbook)
-        Dim ThisIsANewWorkbook As Boolean = False
 
+
+    Public Sub WorkbookActivated(Wb As Microsoft.Office.Interop.Excel.Workbook)
 
         'Check if this workbook is a workbook this plugin can handle
-        If GetCustomDocumentProperty(Wb, "CustomDocType") = "SKUAlertsUI" Or
-            GetCustomDocumentProperty(Wb, "CustomDocType") = "GRUT_UI" Or
-            GetCustomDocumentProperty(Wb, "CustomDocType") = "GRUT_MARKET_UI" Then
+        Dim CustomDocType As String = GetCustomDocumentProperty(Wb, "CustomDocType")
+
+        If CustomDocType = "SKUAlertsUI" Or
+           CustomDocType = "GRUT_UI" Or
+           CustomDocType = "GRUT_MARKET_UI" Then
 
             'check if it is the first time we see this workbook
             If _WorkbooksData.Exists(Function(x) x.Workbook Is Wb) = False Then
                 _WorkbooksData.Add(New OpenWorkbookData(Wb)) 'if yes, add in the list
-                ThisIsANewWorkbook = True
 
-                'Check also the version of the required Plugin
+                _ThisWorkbookData = _WorkbooksData.Find(Function(x) x.Workbook Is Wb)
+
+                _ThisWorkbookData.DatabaseReaderType = CustomDocType
+                _ThisWorkbookData.TemplateID = GetCustomDocumentProperty(Wb, "TemplateID")
+                _ThisWorkbookData.TemplateVersion = GetCustomDocumentProperty(Wb, "TemplateVersion")
+            Else
+                _ThisWorkbookData = _WorkbooksData.Find(Function(x) x.Workbook Is Wb)
             End If
 
-            _ThisWorkbookData = _WorkbooksData.Find(Function(x) x.Workbook Is Wb)
-            _ThisWorkbookData.DatabaseReaderType = GetCustomDocumentProperty(Wb, "CustomDocType")
 
-            'Create a reference to the SKUAlerts worksheets
+            'Create a reference to the key worksheets
             For Each wrksheet As Microsoft.Office.Interop.Excel.Worksheet In _ThisWorkbookData.Workbook.Sheets
                 Select Case Globals.GetCustomWorksheetProperty(wrksheet, "CustomSheetType")
                     Case "SKUAlertsConfig", "GRUTConfig"
@@ -145,7 +159,7 @@ Public Module Globals
             If _DetailsSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the detailed view worksheet")
 
 
-            _CurRibbonActions.TemplateLoaded(GetCustomDocumentProperty(Wb, "TemplateID"), GetCustomDocumentProperty(Wb, "TemplateVersion"), GetCustomDocumentProperty(Wb, "CustomDocType"))
+            _CurRibbonActions.TemplateLoaded(_ThisWorkbookData.TemplateID, _ThisWorkbookData.TemplateVersion, _ThisWorkbookData.DatabaseReaderType)
 
         Else
             _ThisWorkbookData = Nothing
@@ -166,7 +180,7 @@ Public Module Globals
         End If
     End Sub
 
-    Public Function GetCustomDocumentProperty(Wb As Microsoft.Office.Interop.Excel.Workbook, PropertyName As String) As String
+    Private Function GetCustomDocumentProperty(Wb As Microsoft.Office.Interop.Excel.Workbook, PropertyName As String) As String
         For Each CustomDocProperty As Microsoft.Office.Core.DocumentProperty In DirectCast(Wb.CustomDocumentProperties, Microsoft.Office.Core.DocumentProperties)
             If CustomDocProperty.Name = PropertyName Then
                 Return CustomDocProperty.Value
@@ -284,6 +298,8 @@ Friend Class OpenWorkbookData 'All workbooks that will be opened will get an ins
     Friend Reader As DatabaseReader
     Friend ReportDate As Date = Nothing
     Friend DatabaseReaderType As String
+    Friend TemplateID As String
+    Friend TemplateVersion As String
 
     Sub New(Wb As Microsoft.Office.Interop.Excel.Workbook)
         Workbook = Wb

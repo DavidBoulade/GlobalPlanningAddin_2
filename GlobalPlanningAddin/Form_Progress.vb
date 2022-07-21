@@ -14,8 +14,13 @@ Public Class Form_Progress
     End Sub
 
     Public Sub SetProgress(Progress As Integer, Optional StatusText As String = "[EMPTY]")
-        Me.ProgressBar1.Value = Progress
-        Me.ProgressBar1.Value = Progress - 1 'the ProgressBar control animates itself to expand to the value. this creates problems. If we move the progress backwards, the animation is not shown
+        If Progress <= 0 Then
+            Me.ProgressBar1.Value = 1
+            Me.ProgressBar1.Value = 0
+        Else
+            Me.ProgressBar1.Value = Progress
+            Me.ProgressBar1.Value = Progress - 1 'the ProgressBar control animates itself to expand to the value. this creates problems. If we move the progress backwards, the animation is not shown
+        End If
         If StatusText <> "[EMPTY]" Then Me.Label_Status.Text = StatusText
         Me.Invalidate(True)
         Me.Update()
