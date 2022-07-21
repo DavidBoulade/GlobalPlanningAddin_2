@@ -38,7 +38,14 @@
             
             <group id="ReportActions_RibbonGroup" label="Report actions" getVisible='GetVisible'>
 
-              <!-- Save changes button -->
+				<!-- Sort by Item SKU Risk button-->
+				<button id="Btn_ReportActions_Sort_SKU" onAction="Btn_Sort_SKU" label="Sort by SKU risk" size="large" getImage='GetBtnImage' getVisible='Get_GRUT_SortBtns_Visible' />
+				
+				<!-- Sort by Item Hierarchy button-->
+				<button id="Btn_ReportActions_Sort_Item" onAction="Btn_Sort_Item" label="Sort by Item risk" size="large" getImage='GetBtnImage' getVisible='Get_GRUT_SortBtns_Visible'/>
+
+
+				<!-- Save changes button -->
               <button id="Btn_ReportActions_Save" onAction="Btn_Save_Click" label="Save to DB" size="large" getImage='GetBtnImage' getEnabled='Get_Btn_Save_Enabled' />
 
               <!-- Display details button -->

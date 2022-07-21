@@ -261,6 +261,8 @@ Imports System.Xml
             Case "Btn_ReportActions_Save" : Return My.Resources.Icon32_Save
             Case "Btn_ReportActions_Details", "Gallery_DetailedView_Infos", "Btn_ContextMenuCell_Details", "Btn_ContextMenuCellLayout_Details" : Return My.Resources.Icon32_MagnifyingGlass
             Case "TemplateImage" : Return _TemplateImage
+            Case "Btn_ReportActions_Sort_SKU" : Return My.Resources.Icon32_SKU_Sort
+            Case "Btn_ReportActions_Sort_Item" : Return My.Resources.Icon32_Item_Sort
             Case Else
                 Return Nothing
         End Select
@@ -328,7 +330,7 @@ Imports System.Xml
         Globals.ReportSheet.Visible = XlSheetVisibility.xlSheetVisible
 
         'Create a new DatabaseReader object
-        Globals.Reader = New DatabaseReader(Globals.ReportDate, Globals.DatabaseReaderType)
+        Globals.Reader = New DatabaseReader(Globals.ReportDate, Globals.DatabaseReaderType, Globals.TemplateID)
         If Globals.Reader.CreateReport() = False Then
             Globals.ReportSheet.Visible = XlSheetVisibility.xlSheetHidden
             Globals.DetailsSheet.Visible = XlSheetVisibility.xlSheetHidden
@@ -372,6 +374,20 @@ Imports System.Xml
         End If
 
     End Sub
+
+    Public Sub Btn_Sort_SKU(ByVal control As IRibbonControl)
+        Globals.Reader.GRUTReport_SortBySKURisk()
+    End Sub
+
+    Public Sub Btn_Sort_Item(ByVal control As IRibbonControl)
+        Globals.Reader.GRUTReport_SortByItemRisk_GroupBySKULevel()
+    End Sub
+
+    Function Get_GRUT_SortBtns_Visible(control As IRibbonControl) As Boolean
+
+        Return Globals.DatabaseReaderType = "GRUT_UI"
+
+    End Function
 
     '**************************************************************************************************************************************************
     '*** Summary report - report date selection
@@ -915,7 +931,6 @@ Imports System.Xml
 
     Public Sub Btn_CheckTemplateVersion_Click(control As CustomUI.IRibbonControl)
         MsgBox("Current template:" & vbCrLf & _CurTemplateDescr & vbCrLf & "Version " & _CurTemplateVersion, MsgBoxStyle.OkOnly, "Global planning Addin")
-        Globals.Reader.GroupBySKULevel()
     End Sub
 
 
