@@ -1135,6 +1135,17 @@ Friend Class DatabaseReader : Implements IDisposable
             Return
         End If
 
+        'Clear filters if we have some
+        If ReportSheet.AutoFilterMode = True Then
+            If ReportSheet.AutoFilter.FilterMode = True Then
+                If MsgBox("This will reset your filters. Do you want to continue?", MsgBoxStyle.YesNo, "Global planning Addin") = MsgBoxResult.No Then
+                    Return
+                Else
+                    ReportSheet.AutoFilter.ShowAllData()
+                End If
+            End If
+        End If
+
         Globals.ThisWorkbook.Application.ScreenUpdating = False
 
         'Clear the groups, sorting won't work properly otherwise.
@@ -1154,6 +1165,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
         Globals.ThisWorkbook.Application.ScreenUpdating = True
     End Sub
+
     Public Sub GRUTReport_SortByItemRisk_GroupBySKULevel()
 
         Dim RangeRowNo As Integer
@@ -1173,12 +1185,25 @@ Friend Class DatabaseReader : Implements IDisposable
             Return
         End If
 
+        'Clear filters if we have some
+        If ReportSheet.AutoFilterMode = True Then
+            If ReportSheet.AutoFilter.FilterMode = True Then
+                If MsgBox("This will reset your filters. Do you want to continue?", MsgBoxStyle.YesNo, "Global planning Addin") = MsgBoxResult.No Then
+                    Return
+                Else
+                    ReportSheet.AutoFilter.ShowAllData()
+                End If
+            End If
+        End If
+
         NbColumnsToColor = CountWsFrozenCols(ReportSheet)
 
         Globals.ThisWorkbook.Application.ScreenUpdating = False
 
         _ProgressWindow = New Form_Progress("Formatting the report")
         _ProgressWindow.Show()
+
+
 
         'Clear the groups, sorting won't work properly otherwise. Didn't find a way to count existing outline levels... so we need to catch the error
         For i As Integer = 1 To 8 'there are 8 levels max in Excel
