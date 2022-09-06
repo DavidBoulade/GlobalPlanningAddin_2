@@ -1218,6 +1218,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
         AutoFilterAndSortReport(New List(Of SortField)(
                         {New SortField("Item_ServiceRiskFactor", SortField.SortOrders.Descending),
+                        New SortField("Item", SortField.SortOrders.Ascending),
                         New SortField("Sourcing_Path", SortField.SortOrders.Ascending)}
                         )
                    )
