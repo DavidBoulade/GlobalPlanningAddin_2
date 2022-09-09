@@ -1237,7 +1237,7 @@ Friend Class DatabaseReader : Implements IDisposable
             Dim FirstGroupRow As Integer
             Dim InAGroup As Boolean = False
             Do
-                If (RangeRowNo + (3 - CurrentLevel) * SKULevel_Rng.NbRows) Mod CInt(((SKULevel_Rng.NbRows * 3) / 100)) = 0 Then
+                If CInt(((SKULevel_Rng.NbRows * 3) / 100)) = 0 OrElse (RangeRowNo + (3 - CurrentLevel) * SKULevel_Rng.NbRows) Mod CInt(((SKULevel_Rng.NbRows * 3) / 100)) = 0 Then
                     _ProgressWindow.SetProgress(CInt(80 * ((RangeRowNo + (3 - CurrentLevel) * SKULevel_Rng.NbRows) / (SKULevel_Rng.NbRows * 3))), "Formatting the report")
                 End If
 
@@ -1281,7 +1281,7 @@ Friend Class DatabaseReader : Implements IDisposable
                 CurrentLevel = SKULevel_Rng.CellValue_Int(RangeRowNo)
                 ReportRowNo = RangeRowNo + REPORT_FIRSTROW - 1
 
-                If RangeRowNo Mod CInt((SKULevel_Rng.NbRows / 20)) = 0 Then
+                If CInt((SKULevel_Rng.NbRows / 20)) = 0 OrElse RangeRowNo Mod CInt((SKULevel_Rng.NbRows / 20)) = 0 Then
                     _ProgressWindow.SetProgress(80 + CInt(20 * (RangeRowNo / SKULevel_Rng.NbRows)), "Coloring the report")
                 End If
 
