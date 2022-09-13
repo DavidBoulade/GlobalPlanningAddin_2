@@ -178,7 +178,7 @@ Friend Class DatabaseReader : Implements IDisposable
                 'We found a new filter
 
                 ColumnName = _Param_ColName_Rng.CellValue_Str(ParamRow)
-                FilterValues = Split(Trim(_Param_ColFilter_Rng.CellValue_Str(ParamRow)), ",")
+                FilterValues = Split(Trim(Replace(_Param_ColFilter_Rng.CellValue_Str(ParamRow), "'", "''")), ",")
 
                 NbValues_Std_Incl = 0
                 NbValues_Std_Excl = 0
