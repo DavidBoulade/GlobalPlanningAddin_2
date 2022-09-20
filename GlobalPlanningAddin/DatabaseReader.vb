@@ -1475,7 +1475,14 @@ Public Class ExcelRangeArray
 
     Sub New(ColumnName As String, ExcelRange As Range)
         _ColumnName = ColumnName
-        _DataArray = CType(ExcelRange.Value, Object(,)) 'DataArray
+
+        If ExcelRange.Count = 1 Then
+            ReDim _DataArray(1, 1) 'Create an array (0 based, 1 based is forbidden in .net) of 4 values to match the behavior below... only the (1,1) value will be used
+            _DataArray(1, 1) = ExcelRange.Value
+        Else
+            _DataArray = CType(ExcelRange.Value, Object(,)) 'Strangely, this returns an array 1 based instead of the standard 0 based
+        End If
+
         _NbRows = _DataArray.GetUpperBound(0)
     End Sub
 
