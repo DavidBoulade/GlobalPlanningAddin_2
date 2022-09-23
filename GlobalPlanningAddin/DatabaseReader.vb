@@ -164,7 +164,7 @@ Friend Class DatabaseReader : Implements IDisposable
         Dim NbValues_Like_Excl As Integer
         Dim Values_Like_Text_Incl As String
         Dim Values_Like_Text_Excl As String
-
+        Dim FilterText As String
 
         Dim ColumnName As String
 
@@ -172,103 +172,115 @@ Friend Class DatabaseReader : Implements IDisposable
         ParamRow = 1 'PARAMS_FIRSTROW
         Do While _Param_ColName_Rng.CellValue_Str(ParamRow) <> ""
 
-
-
             If Trim(_Param_ColFilter_Rng.CellValue_Str(ParamRow)) <> "" Then
                 'We found a new filter
 
                 ColumnName = _Param_ColName_Rng.CellValue_Str(ParamRow)
-                FilterValues = Split(Trim(Replace(_Param_ColFilter_Rng.CellValue_Str(ParamRow), "'", "''")), ",")
 
-                NbValues_Std_Incl = 0
-                NbValues_Std_Excl = 0
-                Values_Std_Text_Incl = ""
-                Values_Std_Text_Excl = ""
+                If Left(Trim(_Param_ColFilter_Rng.CellValue_Str(ParamRow)), 1) = "=" Or
+                    Left(_Param_ColFilter_Rng.CellValue_Str(ParamRow), 1) = "<" Or
+                    Left(_Param_ColFilter_Rng.CellValue_Str(ParamRow), 1) = ">" Or
+                    Left(_Param_ColFilter_Rng.CellValue_Str(ParamRow), 2) = "<=" Or
+                    Left(_Param_ColFilter_Rng.CellValue_Str(ParamRow), 2) = ">=" Then
 
-                NbValues_Like_Incl = 0
-                NbValues_Like_Excl = 0
-                Values_Like_Text_Incl = ""
-                Values_Like_Text_Excl = ""
+                    FilterText = SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " " & Trim(_Param_ColFilter_Rng.CellValue_Str(ParamRow))
 
-                For i = LBound(FilterValues) To UBound(FilterValues)
+                    _DBAdapter.AddQueryFilter("(" & FilterText & ")")
 
-                    If FilterValues(i) = "{EMPTY}" Then FilterValues(i) = ""
-                    If FilterValues(i) = "!{EMPTY}" Then FilterValues(i) = "!"
+                Else
 
-                    If Left(FilterValues(i), 1) = "!" Then
-                        'This value needs to be EXcluded
-                        If FilterValues(i).Contains("%") Then
-                            'we found a wildcard, need to use the LIKE operator
-                            NbValues_Like_Excl += 1
-                            If NbValues_Like_Excl > 1 Then Values_Like_Text_Excl &= " AND "
-                            Values_Like_Text_Excl &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " NOT LIKE '" & Right(FilterValues(i), Len(FilterValues(i)) - 1) & "'"
+                    FilterValues = Split(Trim(Replace(_Param_ColFilter_Rng.CellValue_Str(ParamRow), "'", "''")), ",")
+
+                    NbValues_Std_Incl = 0
+                    NbValues_Std_Excl = 0
+                    Values_Std_Text_Incl = ""
+                    Values_Std_Text_Excl = ""
+
+                    NbValues_Like_Incl = 0
+                    NbValues_Like_Excl = 0
+                    Values_Like_Text_Incl = ""
+                    Values_Like_Text_Excl = ""
+
+                    For i = LBound(FilterValues) To UBound(FilterValues)
+
+                        If FilterValues(i) = "{EMPTY}" Then FilterValues(i) = ""
+                        If FilterValues(i) = "!{EMPTY}" Then FilterValues(i) = "!"
+
+                        If Left(FilterValues(i), 1) = "!" Then
+                            'This value needs to be EXcluded
+                            If FilterValues(i).Contains("%") Then
+                                'we found a wildcard, need to use the LIKE operator
+                                NbValues_Like_Excl += 1
+                                If NbValues_Like_Excl > 1 Then Values_Like_Text_Excl &= " AND "
+                                Values_Like_Text_Excl &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " NOT LIKE '" & Right(FilterValues(i), Len(FilterValues(i)) - 1) & "'"
+                            Else
+                                'no wildcard found, use the IN operator
+                                NbValues_Std_Excl += 1
+                                If NbValues_Std_Excl > 1 Then Values_Std_Text_Excl &= ","
+                                Values_Std_Text_Excl = Values_Std_Text_Excl & "'" & Right(FilterValues(i), Len(FilterValues(i)) - 1) & "'"
+                            End If
                         Else
-                            'no wildcard found, use the IN operator
-                            NbValues_Std_Excl += 1
-                            If NbValues_Std_Excl > 1 Then Values_Std_Text_Excl &= ","
-                            Values_Std_Text_Excl = Values_Std_Text_Excl & "'" & Right(FilterValues(i), Len(FilterValues(i)) - 1) & "'"
-                        End If
-                    Else
-                        'This value needs to be INcluded
-                        If FilterValues(i).Contains("%") Then
-                            'we found a wildcard, need to use the LIKE operator
-                            NbValues_Like_Incl += 1
-                            If NbValues_Like_Incl > 1 Then Values_Like_Text_Incl &= " OR "
-                            Values_Like_Text_Incl &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " LIKE '" & FilterValues(i) & "'"
-                        Else
-                            'no wildcard found, use the IN operator
-                            NbValues_Std_Incl += 1
-                            If NbValues_Std_Incl > 1 Then Values_Std_Text_Incl &= ","
-                            Values_Std_Text_Incl = Values_Std_Text_Incl & "'" & FilterValues(i) & "'"
+                            'This value needs to be INcluded
+                            If FilterValues(i).Contains("%") Then
+                                'we found a wildcard, need to use the LIKE operator
+                                NbValues_Like_Incl += 1
+                                If NbValues_Like_Incl > 1 Then Values_Like_Text_Incl &= " OR "
+                                Values_Like_Text_Incl &= SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & " LIKE '" & FilterValues(i) & "'"
+                            Else
+                                'no wildcard found, use the IN operator
+                                NbValues_Std_Incl += 1
+                                If NbValues_Std_Incl > 1 Then Values_Std_Text_Incl &= ","
+                                Values_Std_Text_Incl = Values_Std_Text_Incl & "'" & FilterValues(i) & "'"
+                            End If
+
                         End If
 
+                    Next i
+
+                    FilterText = ""
+
+                    If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
+                        FilterText &= "("
                     End If
 
-                Next i
+                    If NbValues_Std_Incl > 0 Then
+                        FilterText &= "ISNULL(" & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & ",'') IN (" & Values_Std_Text_Incl & ")"
+                    End If
 
-                Dim FilterText As String = ""
+                    If NbValues_Std_Excl > 0 Then
+                        If NbValues_Std_Incl > 0 Then FilterText &= " AND "
+                        FilterText &= "ISNULL(" & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & ",'') NOT IN (" & Values_Std_Text_Excl & ")"
+                    End If
 
-                If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
-                    FilterText &= "("
+                    If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
+                        FilterText &= ")"
+                    End If
+
+                    If NbValues_Std_Incl + NbValues_Std_Excl > 0 And NbValues_Like_Incl + NbValues_Like_Excl > 0 Then
+                        FilterText &= " OR "
+                    End If
+
+                    If NbValues_Like_Incl > 0 And NbValues_Like_Excl > 0 Then
+                        FilterText &= "("
+                    End If
+
+                    If NbValues_Like_Incl > 0 Then
+                        'If FilterText <> "" Then FilterText &= " AND "
+                        FilterText &= " (" & Values_Like_Text_Incl & ")"
+                    End If
+
+                    If NbValues_Like_Excl > 0 Then
+                        If NbValues_Like_Incl > 0 Then FilterText &= " AND "
+                        FilterText &= " (" & Values_Like_Text_Excl & ")"
+                    End If
+
+                    If NbValues_Like_Incl > 0 And NbValues_Like_Excl > 0 Then
+                        FilterText &= ")"
+                    End If
+
+                    _DBAdapter.AddQueryFilter("(" & FilterText & ")")
+
                 End If
-
-                If NbValues_Std_Incl > 0 Then
-                    FilterText &= "ISNULL(" & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & ",'') IN (" & Values_Std_Text_Incl & ")"
-                End If
-
-                If NbValues_Std_Excl > 0 Then
-                    If NbValues_Std_Incl > 0 Then FilterText &= " AND "
-                    FilterText &= "ISNULL(" & SKUAlertsDatabaseAdapter.GetColDatabaseNameFromColName(ColumnName) & ",'') NOT IN (" & Values_Std_Text_Excl & ")"
-                End If
-
-                If NbValues_Std_Incl > 0 And NbValues_Std_Excl > 0 Then
-                    FilterText &= ")"
-                End If
-
-                If NbValues_Std_Incl + NbValues_Std_Excl > 0 And NbValues_Like_Incl + NbValues_Like_Excl > 0 Then
-                    FilterText &= " OR "
-                End If
-
-                If NbValues_Like_Incl > 0 And NbValues_Like_Excl > 0 Then
-                    FilterText &= "("
-                End If
-
-                If NbValues_Like_Incl > 0 Then
-                    'If FilterText <> "" Then FilterText &= " AND "
-                    FilterText &= " (" & Values_Like_Text_Incl & ")"
-                End If
-
-                If NbValues_Like_Excl > 0 Then
-                    If NbValues_Like_Incl > 0 Then FilterText &= " AND "
-                    FilterText &= " (" & Values_Like_Text_Excl & ")"
-                End If
-
-                If NbValues_Like_Incl > 0 And NbValues_Like_Excl > 0 Then
-                    FilterText &= ")"
-                End If
-
-
-                _DBAdapter.AddQueryFilter("(" & FilterText & ")")
 
             End If
 
