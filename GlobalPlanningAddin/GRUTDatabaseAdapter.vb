@@ -105,14 +105,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
                 "FIRMPLANSHIP", 'Added 14/03/2022
                 "CONSTRPROXYDEMAND",
                 "PROXYRECSHIP",
-                "CUT_COMMITINTRANSOUT_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_ADJFCSTCUSTORDERS_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_NONFCSTCUSTORDERS_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_DEPDMD_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_PROXYRECSHIP_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_CONSTRPROXYDEMAND_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_IND_DMD_ORDERS_ONLY", 'Updated 21/02/2022
-                "CUT_OTHER_DMD_ORDERS_ONLY" 'Updated 21/02/2022
+                "CUT_IND_DMD_ORDERS_ONLY"
                 }
 
     End Function
