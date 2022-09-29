@@ -140,6 +140,9 @@ Public Module Globals
                 _ThisWorkbookData = _WorkbooksData.Find(Function(x) x.Workbook Is Wb)
             End If
 
+            _ConfigSheet = Nothing
+            _ReportSheet = Nothing
+            _DetailsSheet = Nothing
 
             'Create a reference to the key worksheets
             For Each wrksheet As Microsoft.Office.Interop.Excel.Worksheet In _ThisWorkbookData.Workbook.Sheets
@@ -157,7 +160,6 @@ Public Module Globals
             If _ConfigSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the config worksheet")
             If _ReportSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the report worksheet")
             If _DetailsSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the detailed view worksheet")
-
 
             _CurRibbonActions.TemplateLoaded(_ThisWorkbookData.TemplateID, _ThisWorkbookData.TemplateVersion, _ThisWorkbookData.DatabaseReaderType)
 
