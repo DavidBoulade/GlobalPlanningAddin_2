@@ -39,9 +39,6 @@ Public Class GRUTMarketDatabaseAdapter : Inherits DatabaseAdapterBase
         Return "" '"GRUT_MARKET_UPDATES_VIEW"
     End Function
 
-    Protected Overrides Function Get_DetailsTable_Name() As String
-        Return "" '"GRUT_PROJECTION"
-    End Function
 
     Public Overrides Function SummaryTable_DefaultSortColumns() As List(Of SortField)
         Return _SortFields

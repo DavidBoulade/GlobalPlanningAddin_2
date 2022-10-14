@@ -52,8 +52,15 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         Return "EXEC [Risk].[List_Pending_GRUT_Factories]"
     End Function
 
-    Protected Overrides Function Get_DetailsTable_Name() As String
+    Protected Overrides Function Get_DetailsTable_Name() As String '0 to -14 days
         Return "GRUT_PROJECTION"
+    End Function
+
+    Protected Overrides Function Get_Details_Archive_Table_Name() As String '-15 to end
+        Return "GRUT_PROJECTION_ARCHIVE"
+    End Function
+    Protected Overrides Function Get_DetailsTable_NbDays_Before_Archive() As Integer? 'switch to the Archive table after 14 calendar days
+        Return 14
     End Function
 
     Public Overrides Function SummaryTable_DefaultSortColumns() As List(Of SortField)
@@ -152,7 +159,20 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         'In the same order as defined in the Get_SummaryTable_KeyColumns function
         'KeyValues(0) -> Item
         'KeyValues(1) -> Loc
-        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE"
+
+        Dim DetailsTableName As String
+
+        If Get_DetailsTable_NbDays_Before_Archive() Is Nothing Then
+            DetailsTableName = Get_DetailsTable_Name()
+        Else
+            If Today() - ReportDate > TimeSpan.FromDays(CType(Get_DetailsTable_NbDays_Before_Archive(), Integer)) Then
+                DetailsTableName = Get_Details_Archive_Table_Name()
+            Else
+                DetailsTableName = Get_DetailsTable_Name()
+            End If
+        End If
+
+        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & DetailsTableName & "] WHERE"
         SQLQuery &= " Item" & " = '" & KeyValues(0) & "'"
         SQLQuery &= " AND ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "'"
         SQLQuery &= " ORDER BY (CASE Loc WHEN '" & KeyValues(1) & "' THEN '0' ELSE Loc END) ASC, STARTDATE ASC" 'Show the current Loc first

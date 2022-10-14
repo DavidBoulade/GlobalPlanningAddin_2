@@ -108,6 +108,7 @@ Imports System.Xml
 
         SetReportDateBtnLabel(Globals.ReportDate) 'Set the Report date label to the correct date
         Globals.ThisRibbon.InvalidateControl("Btn_ReportActions_Save") 'Force check if we should enable the save button
+        Globals.ThisRibbon.InvalidateControl("Btn_ReportActions_Details") 'Force check if we should enable the details button
 
         'update header groups visibility
         If Not (Globals.ThisWorkbook Is Nothing) Then
@@ -131,10 +132,10 @@ Imports System.Xml
         Dim ActivetedWorksheet As Microsoft.Office.Interop.Excel.Worksheet = CType(Ws, Microsoft.Office.Interop.Excel.Worksheet)
 
         Select Case Globals.GetCustomWorksheetProperty(ActivetedWorksheet, "CustomSheetType")
-            Case "SKUAlertsConfig", "GRUTConfig"
-                SetReportActionsGroupVisiblility(False)
-                SetProjectionDetailsGroupVisiblility(False)
-            Case "SKUAlertsReport", "GRUTReport"
+            'Case "SKUAlertsConfig", "GRUTConfig"
+            '    SetReportActionsGroupVisiblility(False)
+            '    SetProjectionDetailsGroupVisiblility(False)
+            Case "SKUAlertsReport", "GRUTReport", "DTCServiceReport"
                 SetReportActionsGroupVisiblility(True)
                 SetProjectionDetailsGroupVisiblility(False)
             Case "SKUAlertsDetails", "GRUTDetails"
@@ -144,6 +145,19 @@ Imports System.Xml
                 SetReportActionsGroupVisiblility(False)
                 SetProjectionDetailsGroupVisiblility(False)
         End Select
+
+        If Globals.ConfigSheet IsNot Nothing AndAlso WorksheetStillExists(Globals.ConfigSheet) = False Then
+            MsgBox("You just deleted the Config sheet. This template will not work anymore." & vbCrLf & "Please reopen a clean template.", MsgBoxStyle.Critical, "Global planning Addin")
+            Globals.ConfigSheetWasDeleted()
+        End If
+        If Globals.ReportSheet IsNot Nothing AndAlso WorksheetStillExists(Globals.ReportSheet) = False Then
+            MsgBox("You just deleted the Report sheet. This template will not work anymore." & vbCrLf & "Please reopen a clean template.", MsgBoxStyle.Critical, "Global planning Addin")
+            Globals.ReportSheetWasDeleted()
+        End If
+        If Globals.DetailsSheet IsNot Nothing AndAlso WorksheetStillExists(Globals.DetailsSheet) = False Then
+            MsgBox("You just deleted the Details sheet. This template will not be able to display detailled data anymore." & vbCrLf & "Please reopen a clean template.", MsgBoxStyle.Critical, "Global planning Addin")
+            Globals.DetailsSheetWasDeleted()
+        End If
     End Sub
 
     '**************************************************************************************************************************************************
@@ -286,7 +300,12 @@ Imports System.Xml
                 Case "ReportCreation_RibbonGroup" : Return _ReportCreationGroupVisible
                 Case "ReportActions_RibbonGroup" : Return _ReportActionsGroupVisible
                 Case "ProjectionDetails_RibbonGroup" : Return _ProjectionDetailsGroupVisible
-                Case "Btn_ContextMenuCell_Details", "Btn_ContextMenuCellLayout_Details" : Return _ReportActionsGroupVisible
+                Case "Btn_ContextMenuCell_Details", "Btn_ContextMenuCellLayout_Details"
+                    If Not (Globals.Reader Is Nothing) Then
+                        Return _ReportActionsGroupVisible And Globals.Reader.HasDetailledViewCapability
+                    Else
+                        Return False
+                    End If
                 Case Else : Return True
             End Select
 
@@ -323,6 +342,16 @@ Imports System.Xml
             Globals.Reader.Dispose()
         End If
 
+        If Globals.ReportSheet Is Nothing Then
+            MsgBox("The Report sheet is missing", MsgBoxStyle.Critical, "Global planning Addin")
+            Exit Sub
+        End If
+
+        If Globals.ConfigSheet Is Nothing Then
+            MsgBox("The Config sheet is missing", MsgBoxStyle.Critical, "Global planning Addin")
+            Exit Sub
+        End If
+
         Globals.ReportDate = NewReportDate
         SetReportDateBtnLabel(Globals.ReportDate) 'Make sure the report date displayed is correct
         SetWorkbookNamedRangeValue("Report_Date", NewReportDate) '.ToOADate.ToString(Globalization.CultureInfo.InvariantCulture)) 'Create/Update a named range called "Report_Date" so that it can be usd in Excel formulas
@@ -333,13 +362,14 @@ Imports System.Xml
         Globals.Reader = New DatabaseReader(Globals.ReportDate, Globals.DatabaseReaderType, Globals.TemplateID)
         If Globals.Reader.CreateReport() = False Then
             Globals.ReportSheet.Visible = XlSheetVisibility.xlSheetHidden
-            Globals.DetailsSheet.Visible = XlSheetVisibility.xlSheetHidden
+            If Globals.DetailsSheet IsNot Nothing Then Globals.DetailsSheet.Visible = XlSheetVisibility.xlSheetHidden
             MsgBox(Globals.Reader.LastMessage, MsgBoxStyle.Critical, "Global planning Addin")
             Globals.Reader.Dispose() 'if it didn't work (no data returned), dispose the object
         Else
             SetWorkbookNamedRangeValue("Report_Range", Globals.Reader.Report_Range_Incl_Header) 'Create/Update a named range called "Report_Date" so that it can be usd in Excel formulas
         End If
         Globals.ThisRibbon.InvalidateControl("Btn_ReportActions_Save") 'Force check again if we should enable the save button
+        Globals.ThisRibbon.InvalidateControl("Btn_ReportActions_Details") 'Force check again if we should enable the details button
     End Sub
 
     '**************************************************************************************************************************************************
@@ -376,10 +406,12 @@ Imports System.Xml
     End Sub
 
     Public Sub Btn_Sort_SKU(ByVal control As IRibbonControl)
+        If Globals.Reader Is Nothing Then Exit Sub
         Globals.Reader.GRUTReport_SortBySKURisk()
     End Sub
 
     Public Sub Btn_Sort_Item(ByVal control As IRibbonControl)
+        If Globals.Reader Is Nothing Then Exit Sub
         Globals.Reader.GRUTReport_SortByItemRisk_GroupBySKULevel()
     End Sub
 
@@ -407,10 +439,26 @@ Imports System.Xml
     '*** Detailled view
     '**************************************************************************************************************************************************
     Dim _KeyValuesOfCurrentRow() As String
+
+    Function Get_Btn_Details_Enabled(control As IRibbonControl) As Boolean
+
+        If Not (Globals.Reader Is Nothing) Then
+            Return Globals.Reader.HasDetailledViewCapability
+        Else
+            Return False
+        End If
+
+    End Function
+
     Public Sub Btn_Details_Click(ByVal control As IRibbonControl)
 
         If Globals.Reader Is Nothing Then Exit Sub
         If Globals.ThisWorkbook.Application.ActiveCell.Row <= DatabaseReader.REPORT_FIRSTROW - 1 Then Exit Sub
+
+        If Globals.DetailsSheet Is Nothing Then
+            MsgBox("The details sheet is missing", MsgBoxStyle.Critical, "Global planning Addin")
+            Exit Sub
+        End If
 
         _KeyValuesOfCurrentRow = Globals.Reader.GetKeyValues_For_SummaryReportRow(Globals.ThisWorkbook.Application.ActiveCell.Row, CType(Globals.ThisWorkbook.ActiveSheet, Microsoft.Office.Interop.Excel.Worksheet))
 
@@ -463,6 +511,11 @@ Imports System.Xml
         If Globals.Reader Is Nothing Then Exit Sub
 
         If _KeyValuesOfCurrentRow Is Nothing Then Exit Sub
+
+        If Globals.DetailsSheet Is Nothing Then 'Not needed in theory, we cannot click on this button if there is no details sheet
+            MsgBox("The details sheet is missing", MsgBoxStyle.Critical, "Global planning Addin")
+            Exit Sub
+        End If
 
         If _AvailableMD04Dates Is Nothing Then
             If Globals.Reader.Read_DetailsTable_Available_Dates(_KeyValuesOfCurrentRow) = False Then
@@ -897,6 +950,8 @@ Imports System.Xml
                 _TemplateImage = My.Resources.Icon32_GRUT
             Case "GRUT_MARKET_UI"
                 _TemplateImage = My.Resources.Icon32_GRUT_Market
+            Case "DTC_SERVICE_UI"
+                _TemplateImage = My.Resources.Icon32_DTC_Service
             Case Else
                 _TemplateImage = Nothing
         End Select

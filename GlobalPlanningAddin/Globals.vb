@@ -115,7 +115,15 @@ Public Module Globals
     Friend ReadOnly Property ReportSheet As Microsoft.Office.Interop.Excel.Worksheet = Nothing
     Friend ReadOnly Property DetailsSheet As Microsoft.Office.Interop.Excel.Worksheet = Nothing
 
-
+    Public Sub ConfigSheetWasDeleted()
+        _ConfigSheet = Nothing
+    End Sub
+    Public Sub ReportSheetWasDeleted()
+        _ReportSheet = Nothing
+    End Sub
+    Public Sub DetailsSheetWasDeleted()
+        _DetailsSheet = Nothing
+    End Sub
 
 
     Public Sub WorkbookActivated(Wb As Microsoft.Office.Interop.Excel.Workbook)
@@ -125,7 +133,8 @@ Public Module Globals
 
         If CustomDocType = "SKUAlertsUI" Or
            CustomDocType = "GRUT_UI" Or
-           CustomDocType = "GRUT_MARKET_UI" Then
+           CustomDocType = "GRUT_MARKET_UI" Or
+           CustomDocType = "DTC_SERVICE_UI" Then
 
             'check if it is the first time we see this workbook
             If _WorkbooksData.Exists(Function(x) x.Workbook Is Wb) = False Then
@@ -147,9 +156,9 @@ Public Module Globals
             'Create a reference to the key worksheets
             For Each wrksheet As Microsoft.Office.Interop.Excel.Worksheet In _ThisWorkbookData.Workbook.Sheets
                 Select Case Globals.GetCustomWorksheetProperty(wrksheet, "CustomSheetType")
-                    Case "SKUAlertsConfig", "GRUTConfig"
+                    Case "SKUAlertsConfig", "GRUTConfig", "DTCServiceConfig"
                         _ConfigSheet = wrksheet
-                    Case "SKUAlertsReport", "GRUTReport"
+                    Case "SKUAlertsReport", "GRUTReport", "DTCServiceReport"
                         _ReportSheet = wrksheet
                     Case "SKUAlertsDetails", "GRUTDetails"
                         _DetailsSheet = wrksheet
@@ -157,9 +166,9 @@ Public Module Globals
             Next
 
             'Verify that the references have been found
-            If _ConfigSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the config worksheet")
-            If _ReportSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the report worksheet")
-            If _DetailsSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the detailed view worksheet")
+            'If _ConfigSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the config worksheet")
+            'If _ReportSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the report worksheet")
+            'If _DetailsSheet Is Nothing Then Throw New System.Exception("Unable to get a reference to the detailed view worksheet")
 
             _CurRibbonActions.TemplateLoaded(_ThisWorkbookData.TemplateID, _ThisWorkbookData.TemplateVersion, _ThisWorkbookData.DatabaseReaderType)
 
@@ -179,6 +188,11 @@ Public Module Globals
                 _ThisWorkbookData.Reader.Dispose()
             End If
             _WorkbooksData.Remove(_ThisWorkbookData) 'remove from the list
+
+            _ConfigSheet = Nothing
+            _ReportSheet = Nothing
+            _DetailsSheet = Nothing
+
         End If
     End Sub
 
@@ -229,6 +243,15 @@ Public Module Globals
             Dim NewName As Name = ThisWorkbook.Names.Add(NamedRangeName, NewRefersTo, True)
         End If
     End Sub
+
+    Public Function WorksheetStillExists(Ws As Microsoft.Office.Interop.Excel.Worksheet) As Boolean
+        Try
+            Dim SheetName As String = Ws.Name
+            Return True
+        Catch ex As Exception
+            Return False
+        End Try
+    End Function
 
 
     'This function is needed as the standard .fileExists() function doesn't always work properly over the network

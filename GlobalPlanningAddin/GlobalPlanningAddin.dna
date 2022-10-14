@@ -49,7 +49,7 @@
               <button id="Btn_ReportActions_Save" onAction="Btn_Save_Click" label="Save to DB" size="large" getImage='GetBtnImage' getEnabled='Get_Btn_Save_Enabled' />
 
               <!-- Display details button -->
-              <button id="Btn_ReportActions_Details" onAction="Btn_Details_Click" label="View Details" size="large" getImage='GetBtnImage' />
+              <button id="Btn_ReportActions_Details" onAction="Btn_Details_Click" label="View Details" size="large" getImage='GetBtnImage' getEnabled='Get_Btn_Details_Enabled'/>
               
             </group>
             
