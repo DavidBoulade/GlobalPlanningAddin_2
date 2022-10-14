@@ -101,6 +101,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="DatabaseAdapterBase.vb" />
+    <Compile Include="DTCServiceDatabaseAdapter.vb" />
     <Compile Include="Form_Changelog.Designer.vb">
       <DependentUpon>Form_Changelog.vb</DependentUpon>
     </Compile>

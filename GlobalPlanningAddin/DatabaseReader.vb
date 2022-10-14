@@ -57,6 +57,8 @@ Friend Class DatabaseReader : Implements IDisposable
                 _DBAdapter = New GRUTDatabaseAdapter(TemplateID)
             Case "GRUT_MARKET_UI"
                 _DBAdapter = New GRUTMarketDatabaseAdapter(TemplateID)
+            Case "DTC_SERVICE_UI"
+                _DBAdapter = New DTCServiceDatabaseAdapter(TemplateID)
         End Select
 
         ReDim _Report_Param_Row(0 To _DBAdapter.SummaryTableColumns.Count - 1) 'Row number of each column in the params worksheet
@@ -718,9 +720,11 @@ Friend Class DatabaseReader : Implements IDisposable
 
         'Create a table to keep a reference to the key columns snapshots
         Dim KeyCol_Snapshot(_DBAdapter.SummaryTable_KeyColumns.Count - 1) As ExcelRangeArray
+        Dim KeyCol_DataType(_DBAdapter.SummaryTable_KeyColumns.Count - 1) As String
         For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
             Dim ColName = _DBAdapter.SummaryTable_KeyColumns(i).ColumnName
             KeyCol_Snapshot(i) = ColumnsSnapshot.Find(Function(c) c.ColumnName = ColName)
+            KeyCol_DataType(i) = _DBAdapter.GetColumnDataType(ColName)
         Next
 
 
@@ -728,7 +732,12 @@ Friend Class DatabaseReader : Implements IDisposable
 
         'Copy the values of the keys for the first row
         For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
-            KeyValues(i) = KeyCol_Snapshot(i).CellValue_Str(CurRowNum)
+            If KeyCol_DataType(i) = "DATE" Then
+                'If the key is of DATE type, we need to format it properly
+                KeyValues(i) = CType(KeyCol_Snapshot(i).CellValue_Date(CurRowNum), Date).ToString("yyyy'-'MM'-'dd") 'The cast is safe, a key cannot be null
+            Else
+                KeyValues(i) = KeyCol_Snapshot(i).CellValue_Str(CurRowNum)
+            End If
             KeyValuesConcatStr &= KeyValues(i)
             If i < _DBAdapter.SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
         Next i
@@ -847,7 +856,11 @@ Friend Class DatabaseReader : Implements IDisposable
             'Copy the values of the keys for the new row
             KeyValuesConcatStr = ""
             For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
-                KeyValues(i) = KeyCol_Snapshot(i).CellValue_Str(CurRowNum)
+                If KeyCol_DataType(i) = "DATE" Then
+                    KeyValues(i) = CType(KeyCol_Snapshot(i).CellValue_Date(CurRowNum), Date).ToString("yyyy'-'MM'-'dd")
+                Else
+                    KeyValues(i) = KeyCol_Snapshot(i).CellValue_Str(CurRowNum)
+                End If
                 KeyValuesConcatStr &= KeyValues(i)
                 If i < _DBAdapter.SummaryTable_KeyColumns.Count - 1 Then KeyValuesConcatStr &= "/"
             Next i
@@ -915,7 +928,13 @@ Friend Class DatabaseReader : Implements IDisposable
         Dim KeyValues(_DBAdapter.SummaryTable_KeyColumns.Count - 1) As String
         For i As Integer = 0 To _DBAdapter.SummaryTable_KeyColumns.Count - 1
             Dim ColIndex As Integer = _DBAdapter.GetColIndexFromDatabaseName(_DBAdapter.SummaryTable_KeyColumns(i).ColumnName)
-            KeyValues(i) = CStr(CType(ReportSheet.Cells(ReportRow, _Report_ColNumber(ColIndex)), Microsoft.Office.Interop.Excel.Range).Value)
+
+            If _DBAdapter.GetColumnDataType(_DBAdapter.SummaryTable_KeyColumns(i).ColumnName) = "DATE" Then
+                'If the key is of DATE type, we need to format it properly
+                KeyValues(i) = CType(CType(ReportSheet.Cells(ReportRow, _Report_ColNumber(ColIndex)), Microsoft.Office.Interop.Excel.Range).Value, Date).ToString("yyyy'-'MM'-'dd") 'The cast is safe, a key cannot be null
+            Else
+                KeyValues(i) = CStr(CType(ReportSheet.Cells(ReportRow, _Report_ColNumber(ColIndex)), Microsoft.Office.Interop.Excel.Range).Value)
+            End If
         Next
         Return KeyValues
 
@@ -1322,6 +1341,11 @@ Friend Class DatabaseReader : Implements IDisposable
         Globals.ThisWorkbook.Application.ScreenUpdating = True
 
     End Sub
+
+    Public Function HasDetailledViewCapability() As Boolean
+        Return _DBAdapter.HasDetailledViewCapability
+    End Function
+
 
 
 #Region "IDisposable Support"

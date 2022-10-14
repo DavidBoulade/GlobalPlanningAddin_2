@@ -46,7 +46,29 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Protected Overridable Function Get_SummaryTableUpdates_ViewName() As String
         Return Get_SummaryTableUpdates_TableName()
     End Function
-    Protected MustOverride Function Get_DetailsTable_Name() As String
+    Protected Overridable Function Get_DetailsTable_Name() As String 'We will take details data from this table before Get_DetailsTable_NbDays_Before_Archive
+        Return ""
+    End Function
+
+    Protected Overridable Function Get_Details_Archive_Table_Name() As String 'We will take details data from this table after Get_DetailsTable_NbDays_Before_Archive
+        Return ""
+    End Function
+
+    Protected Overridable Function Get_DetailsTable_NbDays_Before_Archive() As Nullable(Of Integer) 'By default, there is no archive 
+        Return Nothing
+    End Function
+
+    Public ReadOnly Property HasDetailledViewCapability As Boolean
+        Get
+            If Get_DetailsTable_Name() = "" And Get_Details_Archive_Table_Name() = "" Then
+                Return False
+            Else
+                Return True
+            End If
+        End Get
+    End Property
+
+
 
     Public Function HasModifiableColumns() As Boolean
         If SummaryTableColumns.Find(Function(x) x.IsModifiable = True) Is Nothing Then 'search first modifiable column
@@ -608,7 +630,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         'Check the result
         SQLQuery = "SELECT "
         For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
-            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & ","
+            SQLQuery &= "[" & SummaryTable_KeyColumns(i).ColumnName & "],"
         Next
         SQLQuery &= "COLUMNAME,OLDVALUE,NEWVALUE,STATUS,COMMENT FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_ViewName() & "]"
         SQLQuery &= "WHERE [ChangedBy]='" & UserName & "' AND "
@@ -824,8 +846,20 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Protected Overridable Function Get_ReadDetailedProjectionData_QueryString(ReportDate As Date, KeyValues As String()) As String
         Dim SQLQuery As String
 
+        Dim DetailsTableName As String
+
+        If Get_DetailsTable_NbDays_Before_Archive() Is Nothing Then
+            DetailsTableName = Get_DetailsTable_Name()
+        Else
+            If Today() - ReportDate > TimeSpan.FromDays(CType(Get_DetailsTable_NbDays_Before_Archive(), Integer)) Then
+                DetailsTableName = Get_Details_Archive_Table_Name()
+            Else
+                DetailsTableName = Get_DetailsTable_Name()
+            End If
+        End If
+
         ' Create the standard SQL query to read data from database. Each DatabaseAdapter can override this function if needed
-        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE "
+        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & DetailsTableName & "] WHERE "
         For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
             SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
             If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
@@ -975,6 +1009,15 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
             SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
             If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
         Next
+
+        If Get_DetailsTable_NbDays_Before_Archive() IsNot Nothing Then
+            SQLQuery &= " UNION SELECT DISTINCT(ReportDate) FROM [" & Get_DatabaseSchema() & "].[" & Get_Details_Archive_Table_Name() & "] WHERE "
+            For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
+                SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
+                If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
+            Next
+        End If
+
         SQLQuery &= ";"
 
         'Now trigger it
@@ -1035,7 +1078,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
         SQLQuery = "SELECT TOP(50) ChangeDateTime, ReportDate, ChangedBy, OldValue, NewValue, Status FROM [" & Get_DatabaseSchema() & "].[" & Get_SummaryTableUpdates_ViewName() & "] WHERE "
         For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
-            SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
+            SQLQuery &= "[" & SummaryTable_KeyColumns(i).ColumnName & "] = '" & KeyValues(i) & "' "
             SQLQuery &= "AND "
         Next
         If Not IsNothing(MinReportDate) Then
