@@ -172,7 +172,7 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
             End If
         End If
 
-        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & DetailsTableName & "] WHERE"
+        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & DetailsTableName & "] WITH (NOLOCK) WHERE"
         SQLQuery &= " Item" & " = '" & KeyValues(0) & "'"
         SQLQuery &= " AND ReportDate = '" & ReportDate.ToString("yyyy'-'MM'-'dd") & "'"
         SQLQuery &= " ORDER BY (CASE Loc WHEN '" & KeyValues(1) & "' THEN '0' ELSE Loc END) ASC, STARTDATE ASC" 'Show the current Loc first
