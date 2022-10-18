@@ -44,10 +44,6 @@ Public Class DTCServiceDatabaseAdapter : Inherits DatabaseAdapterBase
         Return "DTC_Service_Raw_Data_UPDATES"
     End Function
 
-    Protected Overrides Function Get_DetailsTable_Name() As String
-        Return ""
-    End Function
-
     Public Overrides Function SummaryTable_DefaultSortColumns() As List(Of SortField)
         Return _SortFields
     End Function
@@ -55,27 +51,5 @@ Public Class DTCServiceDatabaseAdapter : Inherits DatabaseAdapterBase
     Private ReadOnly _SortFields As New List(Of SortField)(
         {New SortField("Date", SortField.SortOrders.Descending)}
         )
-
-    Public Overrides Function Get_DetailedView_Columns() As String()
-        Return {
-                ""
-                }
-
-    End Function
-
-    Public Overrides Function Get_DetailedView_CurItem_HeaderText() As String()
-
-        Return {
-                ""}
-    End Function
-
-    Private ReadOnly _DetailedView_InfoDropDown_Items As New List(Of String())({
-                ({""})
-                })
-
-    Public Overrides Function Get_DetailedView_InfoDropDown_Items() As List(Of String())
-        Return _DetailedView_InfoDropDown_Items
-    End Function
-
 
 End Class

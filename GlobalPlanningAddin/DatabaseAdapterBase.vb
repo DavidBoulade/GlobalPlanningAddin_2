@@ -42,7 +42,9 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Protected Overridable Function Get_SummaryTable_Alias() As String
         Return ""
     End Function
-    Protected MustOverride Function Get_SummaryTableUpdates_TableName() As String
+    Protected Overridable Function Get_SummaryTableUpdates_TableName() As String
+        Return ""
+    End Function
     Protected Overridable Function Get_SummaryTableUpdates_ViewName() As String
         Return Get_SummaryTableUpdates_TableName()
     End Function
@@ -90,9 +92,19 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
     Protected Overridable Function Get_DetailledView_Optional_OrderBySQLClause() As String 'Optional ORDER BY clause used when querying the detailled data
         Return ""
     End Function
-    Public MustOverride Function Get_DetailedView_Columns() As String()
-    Public MustOverride Function Get_DetailedView_CurItem_HeaderText() As String()
-    Public MustOverride Function Get_DetailedView_InfoDropDown_Items() As List(Of String())
+    Public Overridable Function Get_DetailedView_Columns() As String()
+        Return {""}
+    End Function
+
+    Public Overridable Function Get_DetailedView_CurItem_HeaderText() As String()
+        Return {""}
+    End Function
+
+    Private ReadOnly _DetailedView_InfoDropDown_Items As New List(Of String())(
+            {({""})})
+    Public Overridable Function Get_DetailedView_InfoDropDown_Items() As List(Of String())
+        Return _DetailedView_InfoDropDown_Items
+    End Function
     Public Class ColumnFilter
         Public Property ColumnNumber As Integer
         Public Property FilterValue As String
@@ -859,7 +871,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         End If
 
         ' Create the standard SQL query to read data from database. Each DatabaseAdapter can override this function if needed
-        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & DetailsTableName & "] WHERE "
+        SQLQuery = "SELECT * FROM [" & Get_DatabaseSchema() & "].[" & DetailsTableName & "] WITH (NOLOCK) WHERE "
         For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
             SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
             If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
@@ -1004,7 +1016,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
-        SQLQuery = "SELECT DISTINCT(ReportDate) FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WHERE "
+        SQLQuery = "SELECT DISTINCT(ReportDate) FROM [" & Get_DatabaseSchema() & "].[" & Get_DetailsTable_Name() & "] WITH (NOLOCK) WHERE "
         For i As Integer = 0 To SummaryTable_KeyColumns.Count - 1
             SQLQuery &= SummaryTable_KeyColumns(i).ColumnName & " = '" & KeyValues(i) & "' "
             If i < SummaryTable_KeyColumns.Count - 1 Then SQLQuery &= "AND "
