@@ -134,7 +134,8 @@ Public Module Globals
         If CustomDocType = "SKUAlertsUI" Or
            CustomDocType = "GRUT_UI" Or
            CustomDocType = "GRUT_MARKET_UI" Or
-           CustomDocType = "DTC_SERVICE_UI" Then
+           CustomDocType = "DTC_SERVICE_UI" Or
+           CustomDocType = "CUST_ORDERS_AT_RISK_UI" Then
 
             'check if it is the first time we see this workbook
             If _WorkbooksData.Exists(Function(x) x.Workbook Is Wb) = False Then
@@ -156,9 +157,9 @@ Public Module Globals
             'Create a reference to the key worksheets
             For Each wrksheet As Microsoft.Office.Interop.Excel.Worksheet In _ThisWorkbookData.Workbook.Sheets
                 Select Case Globals.GetCustomWorksheetProperty(wrksheet, "CustomSheetType")
-                    Case "SKUAlertsConfig", "GRUTConfig", "DTCServiceConfig"
+                    Case "SKUAlertsConfig", "GRUTConfig", "DTCServiceConfig", "GPAConfig"
                         _ConfigSheet = wrksheet
-                    Case "SKUAlertsReport", "GRUTReport", "DTCServiceReport"
+                    Case "SKUAlertsReport", "GRUTReport", "DTCServiceReport", "GPAReport"
                         _ReportSheet = wrksheet
                     Case "SKUAlertsDetails", "GRUTDetails"
                         _DetailsSheet = wrksheet

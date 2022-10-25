@@ -100,6 +100,7 @@
     <Import Include="System.Threading.Tasks" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CustomerOrdersAtRiskDatabaseAdapter.vb" />
     <Compile Include="DatabaseAdapterBase.vb" />
     <Compile Include="DTCServiceDatabaseAdapter.vb" />
     <Compile Include="Form_Changelog.Designer.vb">
