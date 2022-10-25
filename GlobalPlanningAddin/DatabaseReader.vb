@@ -704,7 +704,7 @@ Friend Class DatabaseReader : Implements IDisposable
             ColumnsSnapshot.Add(New ExcelRangeArray(KeyColumn.ColumnName,
                                                      ReportSheet.Range(
                                                             ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(KeyColumnIndex)),
-                                                            ReportSheet.Cells(ReportSheet.UsedRange.Rows.End(XlDirection.xlDown).Row, _Report_ColNumber(KeyColumnIndex))
+                                                            ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Report_ColNumber(KeyColumnIndex))
                                                                 )))
         Next
 
@@ -715,7 +715,7 @@ Friend Class DatabaseReader : Implements IDisposable
 
                 ColumnsSnapshot.Add(New ExcelRangeArray(ModifiableColumn.ColumnName, ReportSheet.Range(
                                                         ReportSheet.Cells(REPORT_FIRSTROW, _Report_ColNumber(ColIndex)),
-                                                        ReportSheet.Cells(ReportSheet.UsedRange.Rows.End(XlDirection.xlDown).Row, _Report_ColNumber(ColIndex))
+                                                        ReportSheet.Cells(REPORT_FIRSTROW + _ReportNbRow - 1, _Report_ColNumber(ColIndex))
                                                             )))
             End If
         Next
