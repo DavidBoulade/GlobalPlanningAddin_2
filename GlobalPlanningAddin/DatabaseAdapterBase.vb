@@ -350,12 +350,13 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         _Adapter.Dispose()
         _Command.Dispose()
 
-
-        Dim PrimaryKeyColumns(SummaryTable_KeyColumns.Count - 1) As DataColumn
-        For i = 0 To SummaryTable_KeyColumns.Count - 1
-            PrimaryKeyColumns(i) = _SummaryTable_Dataset.Tables(0).Columns(SummaryTable_KeyColumns(i).ColumnName)
-        Next
-        _SummaryTable_Dataset.Tables(0).PrimaryKey = PrimaryKeyColumns
+        If SummaryTable_ModifiableColumns.Count > 0 Then 'if there is no modifiable colum in the report, do not need primary keys
+            Dim PrimaryKeyColumns(SummaryTable_KeyColumns.Count - 1) As DataColumn
+            For i = 0 To SummaryTable_KeyColumns.Count - 1
+                PrimaryKeyColumns(i) = _SummaryTable_Dataset.Tables(0).Columns(SummaryTable_KeyColumns(i).ColumnName)
+            Next
+            _SummaryTable_Dataset.Tables(0).PrimaryKey = PrimaryKeyColumns
+        End If
 
         Return ReportNbRow
 

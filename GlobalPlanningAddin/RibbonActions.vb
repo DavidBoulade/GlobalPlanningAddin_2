@@ -952,6 +952,8 @@ Imports System.Xml
                 _TemplateImage = My.Resources.Icon32_GRUT_Market
             Case "DTC_SERVICE_UI"
                 _TemplateImage = My.Resources.Icon32_DTC_Service
+            Case "CUST_ORDERS_AT_RISK_UI"
+                _TemplateImage = My.Resources.Icon32_CustOrdersAtRisk
             Case Else
                 _TemplateImage = Nothing
         End Select

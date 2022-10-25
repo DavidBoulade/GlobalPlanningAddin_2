@@ -59,6 +59,8 @@ Friend Class DatabaseReader : Implements IDisposable
                 _DBAdapter = New GRUTMarketDatabaseAdapter(TemplateID)
             Case "DTC_SERVICE_UI"
                 _DBAdapter = New DTCServiceDatabaseAdapter(TemplateID)
+            Case "CUST_ORDERS_AT_RISK_UI"
+                _DBAdapter = New CustomerOrdersAtRiskDatabaseAdapter(TemplateID)
         End Select
 
         ReDim _Report_Param_Row(0 To _DBAdapter.SummaryTableColumns.Count - 1) 'Row number of each column in the params worksheet
