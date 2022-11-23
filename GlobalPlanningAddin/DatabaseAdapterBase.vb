@@ -115,7 +115,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         Return Columnsfilters 'By default, we return an empty list
     End Function
 
-    Protected Overridable Function Get_Preliminary_Check_Query() As String
+    Protected Overridable Function Get_Preliminary_Check_Query(ReportDate As Date) As String
         Return ""
     End Function
 
@@ -213,20 +213,20 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         Return _ValueModifications.Count
     End Function
 
-    Public Function Run_Preliminary_Check_Query() As String
+    Public Function Run_Preliminary_Check_Query(ReportDate As Date) As String
         Dim ex As Exception
         Dim SQLQuery As String
         Dim NbFailedQueries As Integer
         Dim ReportNbRow As Integer
 
-        If Get_Preliminary_Check_Query() = "" Then Return ""
+        If Get_Preliminary_Check_Query(ReportDate) = "" Then Return ""
 
         If Not (_ResultDataSet Is Nothing) Then _ResultDataSet.Dispose()
         If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
         'SQL query
-        SQLQuery = Get_Preliminary_Check_Query()
+        SQLQuery = Get_Preliminary_Check_Query(ReportDate)
 
         'Now trigger it
         NbFailedQueries = 0
@@ -362,6 +362,112 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
 
     End Function
 
+    Public Function gettestdata() As Object(,)
+        Dim TableNbRows As Integer = 1
+        Dim TableNbCols As Integer = 1
+
+        Dim ex As Exception
+        Dim SQLQuery As String
+        Dim NbFailedQueries As Integer
+        Dim DatasetNbRow As Integer
+
+        If Not (_ResultDataSet Is Nothing) Then _ResultDataSet.Dispose()
+        If Not (_Adapter Is Nothing) Then _Adapter.Dispose()
+        If Not (_Command Is Nothing) Then _Command.Dispose()
+
+
+        ' Create the SQL query to read data from database
+        SQLQuery = "EXEC risk.testdata;"
+
+        'Now trigger it
+        NbFailedQueries = 0
+        Do
+
+            _Command = New SqlCommand(SQLQuery, _Connection)
+            _Adapter = New SqlDataAdapter(_Command)
+            _ResultDataSet = New DataSet
+
+            ex = Nothing
+            Try
+                DatasetNbRow = _Adapter.Fill(_ResultDataSet, "ResultTable") 'Try to run the query, and update the number of rows
+            Catch ex
+                'Dispose these object, we will recreate new instances in the next loop
+                _ResultDataSet.Dispose()
+                _Adapter.Dispose()
+                _Command.Dispose()
+
+                NbFailedQueries += 1
+                'AddMessageToStack(New LogMessage("Warning: Unable to xxxx (attempt " & NbFailedQueries.ToString(Globalization.CultureInfo.InvariantCulture) & ") : " & ex.Message, LogLevel.LogWarning))
+
+                If NbFailedQueries = 5 Then 'after 5 failed trials, we give up for now
+                    'AddMessageToStack(New LogMessage("Error: Unable to xxxx (will retry in 5 min) : " & ex.Message, LogLevel.LogError))
+                    Throw New System.Exception("Error while running the data read query from the database")
+                Else
+                    Thread.Sleep(NbFailedQueries * 1000) 'if we tried less than 5 times, pause the thread for an increasing amount of time until next trial
+                End If
+
+                'Re-check the connection to the database server for next loop
+                If CheckSQLConnectionAndReconnect(_Connection, 5) = False Then
+                    Throw New System.Exception("Error: Unable to connect to the database")
+                End If
+
+            End Try
+
+        Loop While Not (ex Is Nothing)
+
+        'Dim HeaderArray As Object(,) = ConvertTableToArray(_ResultDataSet.Tables(0))
+        'Dim DataArray As Object(,) = ConvertTableToArray(_ResultDataSet.Tables(1))
+
+        'Dim newArray As Object(,) = New Object(UBound(HeaderArray, 1) + UBound(DataArray, 1) + 1, UBound(HeaderArray, 2)) {}
+        'Array.Copy(HeaderArray, newArray, HeaderArray.Length)
+        'Array.Copy(DataArray, 0, newArray, HeaderArray.Length, DataArray.Length)
+
+        For Each DataRow As DataRow In _ResultDataSet.Tables(0).Rows
+            If CInt(DataRow("Row")) > TableNbRows Then TableNbRows = CInt(DataRow("Row"))
+            If CInt(DataRow("Col")) > TableNbCols Then TableNbCols = CInt(DataRow("Col"))
+        Next
+
+        Dim myArray(0 To TableNbRows - 1, 0 To TableNbCols - 1) As Object
+
+        For Each DataRow As DataRow In _ResultDataSet.Tables(0).Rows
+            myArray(CInt(DataRow("Row")) - 1, CInt(DataRow("Col")) - 1) = DataRow("Value")
+        Next
+
+        _ResultDataSet.Dispose()
+        _Adapter.Dispose()
+        _Command.Dispose()
+
+
+        Return myArray
+    End Function
+    Private Function ConvertTableToArray(dtTable As System.Data.DataTable) As Object(,)
+
+        Dim myArray(0 To dtTable.Rows.Count - 1, 0 To dtTable.Columns.Count - 1) As Object
+
+        For i As Integer = 0 To dtTable.Rows.Count - 1
+            For j As Integer = 0 To dtTable.Columns.Count - 1
+                If dtTable.Columns(j).DataType = System.Type.GetType("System.DateTime") Then
+                    If Not (dtTable.Rows(i)(j) Is DBNull.Value) AndAlso CDate(dtTable.Rows(i)(j)).ToOADate = 0 Then
+                        myArray(i, j) = Nothing
+                    Else
+                        myArray(i, j) = dtTable.Rows(i)(j)
+                    End If
+
+                Else
+                    If dtTable.Rows(i)(j) Is DBNull.Value Then
+                        myArray(i, j) = Nothing
+                    Else
+                        myArray(i, j) = dtTable.Rows(i)(j)
+                    End If
+
+                End If
+
+            Next
+        Next
+
+        Return myArray
+    End Function
+
     Public Function Read_Columns_Properties(TemplateID As String) As Boolean
         Dim ex As Exception
         Dim SQLQuery As String
@@ -373,7 +479,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         If Not (_Command Is Nothing) Then _Command.Dispose()
 
         ' Create the SQL query to read data from database
-        SQLQuery = "SELECT COLUMNNAME,ISKEY,ISMODIFIABLE,MODIFIABLEDATATYPE "
+        SQLQuery = "SELECT COLUMNNAME,ISKEY,ISMODIFIABLE,DATATYPE "
         SQLQuery &= "From [GPA].[TEMPLATE_COLUMNS_VIEW]"
         SQLQuery &= "WHERE TEMPLATENAME = '" & TemplateID & "';"
 
@@ -421,7 +527,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
                         CStr(ResultRow.Item("COLUMNNAME")),
                         CBool(ResultRow.Item("ISKEY")),
                         CBool(ResultRow.Item("ISMODIFIABLE")),
-                        CStr(IIf(IsDBNull(ResultRow.Item("MODIFIABLEDATATYPE")), "", ResultRow.Item("MODIFIABLEDATATYPE"))),
+                        CStr(IIf(IsDBNull(ResultRow.Item("DATATYPE")), "", ResultRow.Item("DATATYPE"))),
                         "")
                 )
         Next
