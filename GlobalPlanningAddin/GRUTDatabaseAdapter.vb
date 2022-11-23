@@ -48,8 +48,8 @@ Public Class GRUTDatabaseAdapter : Inherits DatabaseAdapterBase
         Return "GRUT_UPDATES_VIEW"
     End Function
 
-    Protected Overrides Function Get_Preliminary_Check_Query() As String
-        Return "EXEC [Risk].[List_Pending_GRUT_Factories]"
+    Protected Overrides Function Get_Preliminary_Check_Query(ReportDate As Date) As String
+        Return "EXEC [Risk].[List_Pending_GRUT_Factories] @ReportDate ='" & Format(ReportDate, "yyyy-MM-dd") & "'"
     End Function
 
     Protected Overrides Function Get_DetailsTable_Name() As String '0 to -14 days

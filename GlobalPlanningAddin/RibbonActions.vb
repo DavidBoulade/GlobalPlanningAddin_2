@@ -217,6 +217,8 @@ Imports System.Xml
 
     Public Sub Btn_CheckVersion_Click(control As CustomUI.IRibbonControl)
 
+        'Globals.Reader.testnewdatasolution()
+
         Dim Form_Info As New Form_PluginInfos
         Form_Info.Show()
 
