@@ -191,6 +191,8 @@ Friend Class DatabaseReader : Implements IDisposable
 
                         For i = LBound(FilterValues) To UBound(FilterValues)
 
+                            If UCase(Trim(FilterValues(i))) = "TRUE" Then FilterValues(i) = "1"
+                            If UCase(Trim(FilterValues(i))) = "FALSE" Then FilterValues(i) = "0"
 
                             If FilterValues(i) = "{EMPTY}" Then
                                 If FilterText <> "" Then FilterText &= " OR "
