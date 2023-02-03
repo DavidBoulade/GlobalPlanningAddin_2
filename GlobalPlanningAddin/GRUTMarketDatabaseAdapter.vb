@@ -8,7 +8,7 @@ Imports System.Data
 
 Public Class GRUTMarketDatabaseAdapter : Inherits DatabaseAdapterBase
 
-    Public Sub New(TemplateID As String)
+    Public Sub New(TemplateID As String)0
         MyBase.New(TemplateID)
     End Sub
 
@@ -22,6 +22,14 @@ Public Class GRUTMarketDatabaseAdapter : Inherits DatabaseAdapterBase
 
     Protected Overrides Function Get_SummaryTable_Name() As String
         Return "GRUT_MARKET_VIEW"
+    End Function
+
+    Protected Overrides Function Get_SummaryTableUpdates_TableName() As String 'Used to send changes to database
+        Return "GRUT_MARKET_UPDATES"
+    End Function
+
+    Protected Overrides Function Get_Preliminary_Check_Query(ReportDate As Date) As String
+        Return "EXEC [Risk].[List_Pending_GRUT_Factories] @ReportDate ='" & Format(ReportDate, "yyyy-MM-dd") & "'"
     End Function
 
     Public Overrides Function SummaryTable_DefaultSortColumns() As List(Of SortField)
