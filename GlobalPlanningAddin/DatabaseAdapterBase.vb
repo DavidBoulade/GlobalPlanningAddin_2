@@ -481,7 +481,7 @@ Public MustInherit Class DatabaseAdapterBase : Implements IDisposable
         ' Create the SQL query to read data from database
         SQLQuery = "SELECT COLUMNNAME,ISKEY,ISMODIFIABLE,DATATYPE "
         SQLQuery &= "From [GPA].[TEMPLATE_COLUMNS_VIEW]"
-        SQLQuery &= "WHERE TEMPLATENAME = '" & TemplateID & "';"
+        SQLQuery &= "WHERE TEMPLATENAME = '" & TemplateID & "' ORDER BY ColumnName ASC;"
 
         'Now trigger it
         NbFailedQueries = 0
